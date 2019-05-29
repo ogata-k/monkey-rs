@@ -44,7 +44,9 @@ impl Token{
 mod test {
     use crate::token::Token;
     use crate::token::TokenType;
+    use crate::lexer::Lexer;
 
+    #[test]
     fn test_next_token() {
         let input = "=+(){},;";
 
@@ -60,7 +62,7 @@ mod test {
             Token::new(TokenType::EOF, "")
         ];
 
-        let lexer = Lexer::new(input);
+        let mut lexer = Lexer::new(input);
 
         for (i, tt) in tests.iter().enumerate(){
             let tok = lexer.next_token();
