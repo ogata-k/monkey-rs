@@ -1,3 +1,4 @@
+/// Tokenとして便指揮できる識別句の一覧
 #[derive(Debug, Eq, PartialEq)]
 pub enum TokenType {
     // 特殊な状態
@@ -26,12 +27,15 @@ pub enum TokenType {
     LET,
 }
 
+
+/// 読んだ文字とそれに対応する識別句からなるトークン
 pub struct Token {
     token_type: TokenType,
     literal: String,
 }
 
 impl Token{
+    /// 初期化関数
     pub fn new(token_type: TokenType, literal: &str) -> Self{
         return Token{
             token_type,
