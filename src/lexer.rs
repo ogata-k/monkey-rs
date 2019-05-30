@@ -1,4 +1,3 @@
-use crate::token;
 use crate::token::{Token, TokenType};
 
 /// 字句解析器
@@ -28,10 +27,24 @@ impl Lexer {
         return l;
     }
 
+    /// 文字として認識しない空白扱いできる記号を飛ばす関数
+    fn skip_whitespace(&mut self) {
+        loop {
+            if let Some(c) = self.ch {
+                if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                    self.read_char();
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+    }
 
     /// 一文字分を呼んで状態を更新するメソッド
     fn read_char(&mut self) {
-        if self.read_position >= self.input.len(){
+        if self.read_position >= self.input.len() {
             self.ch = None;
         } else {
             self.ch = self.input.chars().nth(self.read_position as usize);
@@ -41,23 +54,26 @@ impl Lexer {
     }
 
     /// 識別子を読んで返す関数
-    fn read_identifier(&mut self) -> String{
+    fn read_identifier(&mut self) -> String {
         // 文字の位置の始点
         let position = self.position;
         loop {
             if let Some(c) = self.ch {
-                if is_letter(&c){
+                if is_letter(&c) {
                     self.read_char();
+                } else {
+                    break;
                 }
             } else {
                 break;
             }
         }
-        return self.input.as_str()[position .. self.position].to_string();
+        return self.input.as_str()[position..self.position].to_string();
     }
 
     /// 入力の次の部分を呼んでToken構造体を生成するメソッド
     pub fn next_token(&mut self) -> Token {
+        self.skip_whitespace();
         let tok = match self.ch.clone() {
             Some('=') => { Token::new(TokenType::ASSIGN, "=") }
             Some(';') => { Token::new(TokenType::SEMICOLON, ";") }
@@ -69,9 +85,11 @@ impl Lexer {
             Some('}') => { Token::new(TokenType::RBRACE, "}") }
             Some(c) => {
                 if is_letter(&c) {
-                    Token::new(TokenType::IDENT, &self.read_identifier())
+                    let ident = self.read_identifier();
+                    let token_type = TokenType::lookup_ident(&ident);
+                    Token::new(token_type, &ident)
                 } else {
-                    Token::new(TokenType::ILLEGAL, "")
+                    Token::new(TokenType::ILLEGAL, &c.to_string())
                 }
             }
             None => { Token::new(TokenType::EOF, "") }
