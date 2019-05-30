@@ -51,6 +51,19 @@ mod test {
     use crate::lexer::Lexer;
 
     #[test]
+    fn test_no_line(){
+        let input = "";
+        let tests = [Token::new(TokenType::EOF, "")];
+        let mut lexer = Lexer::new(input);
+        for (i, tt) in tests.iter().enumerate(){
+            let tok = lexer.next_token();
+
+            assert_eq!(tok.token_type, tt.token_type);
+            assert_eq!(tok.literal, tt.literal);
+        }
+    }
+
+    #[test]
     fn test_next_token() {
         let input = "=+(){},;";
 
