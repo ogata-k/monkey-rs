@@ -47,7 +47,7 @@ impl Lexer {
         if self.read_position >= self.input.len() {
             self.ch = None;
         } else {
-            self.ch = self.input.chars().nth(self.read_position as usize);
+            self.ch = self.input.chars().nth(self.read_position);
         }
         self.position = self.read_position;
         self.read_position += 1;
@@ -71,6 +71,25 @@ impl Lexer {
         return self.input.as_str()[position..self.position].to_string();
     }
 
+    /// 数字を読んで返す関数
+    fn read_number(&mut self) -> String {
+        // 文字の位置の始点
+        let position = self.position;
+        loop {
+            if let Some(c) = self.ch {
+                if is_digit(&c) {
+                    self.read_char();
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        return self.input.as_str()[position..self.position].to_string();
+    }
+
+
     /// 入力の次の部分を呼んでToken構造体を生成するメソッド
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
@@ -88,11 +107,19 @@ impl Lexer {
                     let ident = self.read_identifier();
                     let token_type = TokenType::lookup_ident(&ident);
                     Token::new(token_type, &ident)
+                } else if is_digit(&c) {
+                    Token::new(TokenType::INT, &self.read_number())
                 } else {
                     Token::new(TokenType::ILLEGAL, &c.to_string())
                 }
             }
-            None => { Token::new(TokenType::EOF, "") }
+            None => {
+                if self.position == self.input.len() {
+                    Token::new(TokenType::EOF, "")
+                } else {
+                    Token::new(TokenType::ILLEGAL, "")
+                }
+            }
         };
 
         self.read_char();
@@ -100,7 +127,12 @@ impl Lexer {
     }
 }
 
-/// monkeyの識別子用の文字判定関数
+/// 識別子用の文字判定関数
 fn is_letter(ch: &char) -> bool {
     return ('a' <= *ch && *ch <= 'z') || ('A' <= *ch && *ch <= 'Z') || *ch == '_';
+}
+
+/// 数字用の判定関数
+fn is_digit(ch: &char) -> bool {
+    return '0' <= *ch && *ch <= '9';
 }
