@@ -36,6 +36,11 @@ pub enum TokenType {
     // キーワード
     FUNCTION,
     LET,
+    TRUE,
+    FALSE,
+    IF,
+    ELSE,
+    RETURN,
 }
 
 impl TokenType {
@@ -43,12 +48,17 @@ impl TokenType {
     pub fn keywords() -> HashMap<String, TokenType> {
         return vec![
             ("fn".to_string(), TokenType::FUNCTION),
-            ("let".to_string(), TokenType::LET)
+            ("let".to_string(), TokenType::LET),
+            ("if".to_string(),TokenType::IF),
+            ("else".to_string(),TokenType::ELSE),
+            ("return".to_string(),TokenType::RETURN),
+            ("true".to_string(),TokenType::TRUE),
+            ("false".to_string(),TokenType::FALSE),
         ].into_iter().collect();
     }
 
     /// 引数が予約語か識別句かどうかでTokenTypeを返す
-    pub fn lookup_ident(ident: &str) ->TokenType{
+    pub fn lookup_ident(ident: &str) -> TokenType {
         let keywords = TokenType::keywords();
         if keywords.contains_key(ident) {
             return keywords.get(ident).unwrap().clone();
@@ -110,6 +120,12 @@ mod test {
 
         !-/*5;
         5 < 10 > 5;
+
+        if (5 < 10) {
+            return true;
+        } else {
+            return false;
+        }
         ";
 
         let tests = [
@@ -158,7 +174,7 @@ mod test {
             Token::new(TokenType::RPAREN, ")"),
             Token::new(TokenType::SEMICOLON, ";"),
             Token::new(TokenType::BANG, "!"),
-        Token::new(TokenType::MINUS, "-"),
+            Token::new(TokenType::MINUS, "-"),
             Token::new(TokenType::SLASH, "/"),
             Token::new(TokenType::ASTERISK, "*"),
             Token::new(TokenType::INT, "5"),
@@ -168,8 +184,25 @@ mod test {
             Token::new(TokenType::INT, "10"),
             Token::new(TokenType::GT, ">"),
             Token::new(TokenType::INT, "5"),
-        Token::new(TokenType::SEMICOLON, ";"),
-        Token::new(TokenType::EOF, ""),
+            Token::new(TokenType::SEMICOLON, ";"),
+            Token::new(TokenType::IF, "if"),
+            Token::new(TokenType::LPAREN, "("),
+            Token::new(TokenType::INT, "5"),
+            Token::new(TokenType::LT, "<"),
+            Token::new(TokenType::INT, "10"),
+            Token::new(TokenType::RPAREN, ")"),
+            Token::new(TokenType::LBRACE, "{"),
+            Token::new(TokenType::RETURN, "return"),
+            Token::new(TokenType::TRUE, "true"),
+            Token::new(TokenType::SEMICOLON, ";"),
+            Token::new(TokenType::RBRACE, "}"),
+            Token::new(TokenType::ELSE, "else"),
+            Token::new(TokenType::LBRACE, "{"),
+            Token::new(TokenType::RETURN, "return"),
+            Token::new(TokenType::FALSE, "false"),
+            Token::new(TokenType::SEMICOLON, ";"),
+            Token::new(TokenType::RBRACE, "}"),
+            Token::new(TokenType::EOF, ""),
         ];
 
         let mut lexer = Lexer::new(input);
