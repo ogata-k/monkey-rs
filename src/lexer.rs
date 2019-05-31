@@ -93,37 +93,61 @@ impl Lexer {
     /// 入力の次の部分を呼んでToken構造体を生成するメソッド
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
-        let tok = match self.ch.clone() {
-            Some('=') => { Token::new(TokenType::ASSIGN, "=") }
-            Some(';') => { Token::new(TokenType::SEMICOLON, ";") }
-            Some('(') => { Token::new(TokenType::LPAREN, "(") }
-            Some(')') => { Token::new(TokenType::RPAREN, ")") }
-            Some(',') => { Token::new(TokenType::COMMA, ",") }
-            Some('+') => { Token::new(TokenType::PLUS, "+") }
-            Some('{') => { Token::new(TokenType::LBRACE, "{") }
-            Some('}') => { Token::new(TokenType::RBRACE, "}") }
+        let mut tok: Option<Token> = None;
+        match self.ch.clone() {
+            Some('=') => {
+                tok = Some(Token::new(TokenType::ASSIGN, "="));
+                self.read_char();
+            }
+            Some(';') => {
+                tok = Some(Token::new(TokenType::SEMICOLON, ";"));
+                self.read_char();
+            }
+            Some('(') => {
+                tok = Some(Token::new(TokenType::LPAREN, "("));
+                self.read_char();
+            }
+            Some(')') => {
+                tok = Some(Token::new(TokenType::RPAREN, ")"));
+                self.read_char();
+            }
+            Some(',') => {
+                tok = Some(Token::new(TokenType::COMMA, ","));
+                self.read_char();
+            }
+            Some('+') => {
+                tok = Some(Token::new(TokenType::PLUS, "+"));
+                self.read_char();
+            }
+            Some('{') => {
+                tok = Some(Token::new(TokenType::LBRACE, "{"));
+                self.read_char();
+            }
+            Some('}') => {
+                tok = Some(Token::new(TokenType::RBRACE, "}"));
+                self.read_char();
+            }
             Some(c) => {
                 if is_letter(&c) {
                     let ident = self.read_identifier();
                     let token_type = TokenType::lookup_ident(&ident);
-                    Token::new(token_type, &ident)
+                    tok = Some(Token::new(token_type, &ident));
                 } else if is_digit(&c) {
-                    Token::new(TokenType::INT, &self.read_number())
+                    tok = Some(Token::new(TokenType::INT, &self.read_number()));
                 } else {
-                    Token::new(TokenType::ILLEGAL, &c.to_string())
+                    tok = Some(Token::new(TokenType::ILLEGAL, &c.to_string()));
                 }
             }
             None => {
                 if self.position == self.input.len() {
-                    Token::new(TokenType::EOF, "")
+                    tok = Some(Token::new(TokenType::EOF, ""));
                 } else {
-                    Token::new(TokenType::ILLEGAL, "")
+                    tok  =Some(Token::new(TokenType::ILLEGAL, ""));
                 }
             }
         };
 
-        self.read_char();
-        return tok;
+        return tok.expect("unknown token");
     }
 }
 
