@@ -95,28 +95,59 @@ impl Lexer {
         self.skip_whitespace();
         let mut tok: Option<Token> = None;
         match self.ch.clone() {
+            // 演算子
             Some('=') => {
                 tok = Some(Token::new(TokenType::ASSIGN, "="));
                 self.read_char();
             }
+            Some('+') => {
+                tok = Some(Token::new(TokenType::PLUS, "+"));
+                self.read_char();
+            }
+            Some('-') => {
+                tok = Some(Token::new(TokenType::MINUS, "-"));
+                self.read_char();
+            }
+            Some('/') => {
+                tok = Some(Token::new(TokenType::SLASH, "/"));
+                self.read_char();
+            }
+            Some('*') => {
+                tok = Some(Token::new(TokenType::ASTERISK, "*"));
+                self.read_char();
+            }
+            Some('!') => {
+                tok = Some(Token::new(TokenType::BANG, "!"));
+                self.read_char();
+            }
+
+            // 1論理演算子
+            Some('<') => {
+                tok = Some(Token::new(TokenType::LT, "<"));
+                self.read_char();
+            }
+            Some('>') => {
+                tok = Some(Token::new(TokenType::GT, ">"));
+                self.read_char();
+            }
+
+            // デリミタ
             Some(';') => {
                 tok = Some(Token::new(TokenType::SEMICOLON, ";"));
-                self.read_char();
-            }
-            Some('(') => {
-                tok = Some(Token::new(TokenType::LPAREN, "("));
-                self.read_char();
-            }
-            Some(')') => {
-                tok = Some(Token::new(TokenType::RPAREN, ")"));
                 self.read_char();
             }
             Some(',') => {
                 tok = Some(Token::new(TokenType::COMMA, ","));
                 self.read_char();
             }
-            Some('+') => {
-                tok = Some(Token::new(TokenType::PLUS, "+"));
+
+            // 括弧
+            Some('(') => {
+                tok = Some(Token::new(TokenType::LPAREN, "("));
+                self.read_char();
+            }
+            Some(')') => {
+                tok = Some(Token::new(TokenType::RPAREN, ")"));
                 self.read_char();
             }
             Some('{') => {
@@ -127,6 +158,8 @@ impl Lexer {
                 tok = Some(Token::new(TokenType::RBRACE, "}"));
                 self.read_char();
             }
+
+            // 識別子とリテラル
             Some(c) => {
                 if is_letter(&c) {
                     let ident = self.read_identifier();
@@ -138,6 +171,8 @@ impl Lexer {
                     tok = Some(Token::new(TokenType::ILLEGAL, &c.to_string()));
                 }
             }
+
+            // 特別な状態
             None => {
                 if self.position == self.input.len() {
                     tok = Some(Token::new(TokenType::EOF, ""));

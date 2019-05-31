@@ -14,11 +14,20 @@ pub enum TokenType {
     // 演算子
     ASSIGN,
     PLUS,
+    MINUS,
+    BANG,
+    ASTERISK,
+    SLASH,
+
+    // 論理演算子
+    LT,
+    GT,
 
     // デリミタ
     COMMA,
     SEMICOLON,
 
+    // 括弧
     LPAREN,
     RPAREN,
     LBRACE,
@@ -98,6 +107,9 @@ mod test {
         };
 
         let result = add(five, ten);
+
+        !-/*5;
+        5 < 10 > 5;
         ";
 
         let tests = [
@@ -145,7 +157,19 @@ mod test {
             Token::new(TokenType::IDENT, "ten"),
             Token::new(TokenType::RPAREN, ")"),
             Token::new(TokenType::SEMICOLON, ";"),
-            Token::new(TokenType::EOF, "")
+            Token::new(TokenType::BANG, "!"),
+        Token::new(TokenType::MINUS, "-"),
+            Token::new(TokenType::SLASH, "/"),
+            Token::new(TokenType::ASTERISK, "*"),
+            Token::new(TokenType::INT, "5"),
+            Token::new(TokenType::SEMICOLON, ";"),
+            Token::new(TokenType::INT, "5"),
+            Token::new(TokenType::LT, "<"),
+            Token::new(TokenType::INT, "10"),
+            Token::new(TokenType::GT, ">"),
+            Token::new(TokenType::INT, "5"),
+        Token::new(TokenType::SEMICOLON, ";"),
+        Token::new(TokenType::EOF, ""),
         ];
 
         let mut lexer = Lexer::new(input);
