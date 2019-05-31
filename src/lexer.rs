@@ -147,7 +147,8 @@ impl Lexer {
             }
         };
 
-        return tok.expect("unknown token");
+        if tok.is_none() { tok = Some(Token::new(TokenType::ILLEGAL, "")); }
+        return tok.unwrap();
     }
 }
 
