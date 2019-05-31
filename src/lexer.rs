@@ -42,6 +42,16 @@ impl Lexer {
         }
     }
 
+    /// 一文字分先を読むソッド
+    fn peek_char(&self) -> Option<char> {
+        return
+            if self.read_position >= self.input.len() {
+                None
+            } else {
+                self.input.chars().nth(self.read_position)
+            };
+    }
+
     /// 一文字分を呼んで状態を更新するメソッド
     fn read_char(&mut self) {
         if self.read_position >= self.input.len() {
@@ -97,7 +107,12 @@ impl Lexer {
         match self.ch.clone() {
             // 演算子
             Some('=') => {
-                tok = Some(Token::new(TokenType::ASSIGN, "="));
+                if Some('=') == self.peek_char() {
+                    tok = Some(Token::new(TokenType::EQ, "=="));
+                    self.read_char();
+                } else {
+                    tok = Some(Token::new(TokenType::ASSIGN, "="));
+                }
                 self.read_char();
             }
             Some('+') => {
@@ -117,11 +132,16 @@ impl Lexer {
                 self.read_char();
             }
             Some('!') => {
-                tok = Some(Token::new(TokenType::BANG, "!"));
+                if Some('=') == self.peek_char() {
+                    tok = Some(Token::new(TokenType::NEQ, "!="));
+                    self.read_char();
+                } else {
+                    tok = Some(Token::new(TokenType::BANG, "!"));
+                }
                 self.read_char();
             }
 
-            // 1論理演算子
+            // 論理演算子
             Some('<') => {
                 tok = Some(Token::new(TokenType::LT, "<"));
                 self.read_char();
@@ -177,7 +197,7 @@ impl Lexer {
                 if self.position == self.input.len() {
                     tok = Some(Token::new(TokenType::EOF, ""));
                 } else {
-                    tok  =Some(Token::new(TokenType::ILLEGAL, ""));
+                    tok = Some(Token::new(TokenType::ILLEGAL, ""));
                 }
             }
         };

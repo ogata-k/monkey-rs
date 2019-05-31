@@ -22,6 +22,8 @@ pub enum TokenType {
     // 論理演算子
     LT,
     GT,
+    EQ,
+    NEQ,
 
     // デリミタ
     COMMA,
@@ -126,6 +128,9 @@ mod test {
         } else {
             return false;
         }
+
+        10 == 10;
+        10 != 9;
         ";
 
         let tests = [
@@ -202,6 +207,14 @@ mod test {
             Token::new(TokenType::FALSE, "false"),
             Token::new(TokenType::SEMICOLON, ";"),
             Token::new(TokenType::RBRACE, "}"),
+            Token::new(TokenType::INT, "10"),
+            Token::new(TokenType::EQ, "=="),
+            Token::new(TokenType::INT, "10"),
+            Token::new(TokenType::SEMICOLON, ";"),
+            Token::new(TokenType::INT, "10"),
+            Token::new(TokenType::NEQ, "!="),
+            Token::new(TokenType::INT, "9"),
+            Token::new(TokenType::SEMICOLON, ";"),
             Token::new(TokenType::EOF, ""),
         ];
 
