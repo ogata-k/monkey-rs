@@ -27,6 +27,11 @@ impl Lexer {
         return l;
     }
 
+    /// 位置プロパティのゲッター
+    pub fn get_position(&self) -> usize {
+        return self.position;
+    }
+
     /// 文字として認識しない空白扱いできる記号を飛ばす関数
     fn skip_whitespace(&mut self) {
         loop {

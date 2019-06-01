@@ -10,5 +10,8 @@ pub mod lexer;
 /// パーサー(構文解析器)が返しうる木構造のノードに関するモジュール
 pub mod ast;
 
+/// パーサー(構文解析器)用モジュール
+pub mod parser;
+
 /// REPLを扱うためのモジュール
 pub mod repl;
