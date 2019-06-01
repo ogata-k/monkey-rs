@@ -85,6 +85,11 @@ impl Token {
             literal: literal.to_string(),
         };
     }
+
+    /// 束縛した値を返す
+    pub fn get_literal(&self) -> String {
+        return self.literal.to_string();
+    }
 }
 
 #[cfg(test)]
