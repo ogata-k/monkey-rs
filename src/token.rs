@@ -250,7 +250,6 @@ mod test {
         for (i, tt) in tests.iter().enumerate() {
             let tok = lexer.next_token();
 
-            println!("{:?} is {:?}?", tok, tt);
             assert_eq!(tok.token_type, tt.token_type);
             assert_eq!(tok.literal, tt.literal);
         }

@@ -67,7 +67,6 @@ impl Parser {
             program.statements.push(stmt);
             self.next_token();
         }
-        println!("parsed program is {:?}", program);
         return Some(program);
     }
 
@@ -131,7 +130,6 @@ impl Parser {
                 name: Box::new(ident),
                 value: Box::new(ident_stub),
             };
-        println!("let statement {:?}", let_statement);
         return Some(let_statement);
     }
 }
@@ -162,7 +160,6 @@ mod test {
         let program = program_opt.unwrap();
         let statements = &program.statements;
         if statements.len() != 3 {
-            println!("statements is {:?}", statements);
             assert!(false, "let文の個数が不適切です。");
         }
 
@@ -176,7 +173,6 @@ mod test {
 
     // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
     fn test_let_statement(stmt: &Statement, test: &str) {
-        println!("input statement {:?}, test statement {:?}", stmt, test);
         match stmt {
             Statement::LetStatement { token, name, value } => {
                 // トークンのletで始まってるか確認
