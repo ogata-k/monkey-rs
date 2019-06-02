@@ -1,7 +1,7 @@
-use crate::lexer::Lexer;
-use crate::token::{Token, TokenType};
 use crate::ast::*;
 use crate::ast::Program;
+use crate::lexer::Lexer;
+use crate::token::{Token, TokenType};
 
 /// パーサー(構文解析器)
 pub struct Parser {
@@ -11,20 +11,23 @@ pub struct Parser {
     // 現在読んでいるトークン
     peek_token: Token,
     // 一つ先のトークン
-    errors: Vec<String>,  // パースシテ失敗したときのエラー文の集まり
+    errors: Vec<String>, // パースシテ失敗したときのエラー文の集まり
 }
 
 impl std::fmt::Debug for Parser {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "Parser{{position: {}, current_token{:?}, peek_token{:?}}}",
-               self.lexer.get_position(),
-               self.current_token,
-               self.peek_token
+        write!(
+            f,
+            "Parser{{position: {}, current_token{:?}, peek_token{:?}}}",
+            self.lexer.get_position(),
+            self.current_token,
+            self.peek_token
         )
     }
 }
 
 impl Parser {
+    // 基本的な関数群
     /// 初期化関数
     pub fn new(mut lexer: Lexer) -> Self {
         let first = lexer.next_token();
@@ -37,29 +40,35 @@ impl Parser {
         };
     }
 
-    /// パースエラーを返す関数
-    pub fn get_errors(&self) -> Vec<String> {
-        return self.errors.clone();
+    /// 先のトークンの型を確認する関数
+    fn peek_token_is(&self, token_type: TokenType) -> bool {
+        return self.peek_token.get_token_type() == token_type;
     }
 
+    /// 現在起点となってるトークンの型を確認する関数
+    fn current_token_is(&self, token_type: TokenType) -> bool {
+        return self.current_token.get_token_type() == token_type;
+    }
+
+    // 読み込み用の関数群
     /// 保持している字句解析器を使って一文字読む関数
     pub fn next_token(&mut self) {
         std::mem::swap(&mut self.current_token, &mut self.peek_token);
         self.peek_token = self.lexer.next_token();
     }
 
-    ///  異常なトークンを検出した場合のエラー
-    fn make_illegal_error(&mut self){
-        let msg = "異常なトークンを検出しました。".to_string();
-        self.errors.push(msg);
+    /// 次の型を読んで予期している型かどうかを判定する関数
+    fn expect_peek(&mut self, token_type: TokenType) -> bool {
+        if self.peek_token_is(token_type.clone()) {
+            self.next_token();
+            return true;
+        } else {
+            self.make_peek_error(token_type);
+            return false;
+        }
     }
 
-    /// 文のパースに失敗した場合のエラー
-    fn make_statement_parse_error(&mut self) {
-        let msg = "文をパースできませんでした。".to_string();
-        self.errors.push(msg);
-    }
-
+    // パース処理
     /// 字句解析器の結果を元にMonkeyプログラムを表す解釈木を生成する関数
     pub fn parse_program(&mut self) -> Option<Program> {
         let mut program = Program::new();
@@ -91,39 +100,12 @@ impl Parser {
         return Some(program);
     }
 
-    /// 現在起点となってるトークンの型を確認する関数
-    fn current_token_is(&self, token_type: TokenType) -> bool {
-        return self.current_token.get_token_type() == token_type;
-    }
-
-    /// 先のトークンの型を確認する関数
-    fn peek_token_is(&self, token_type: TokenType) -> bool {
-        return self.peek_token.get_token_type() == token_type;
-    }
-
-    /// 先読み時に発生したエラー用をフォーマットを使って生成して追加する。
-    fn make_peek_error(&mut self, expect_type: TokenType) {
-        let msg = format!("トークン型{:?}を期待して読み込みましたが、実際に読み込んだトークン型は{:?}でした。", expect_type, self.current_token.get_token_type());
-        self.errors.push(msg);
-    }
-
     /// 文用のパーサー
     pub fn parse_statement(&mut self) -> Option<Statement> {
         if self.current_token.is_let_token() {
             return self.parse_let_statement();
         } else {
             return None;
-        }
-    }
-
-    /// 次の型を読んで予期している型かどうかを判定する関数
-    fn expect_peek(&mut self, token_type: TokenType) -> bool {
-        if self.peek_token_is(token_type.clone()) {
-            self.next_token();
-            return true;
-        } else {
-            self.make_peek_error(token_type);
-            return false;
         }
     }
 
@@ -160,15 +142,43 @@ impl Parser {
         };
         return Some(let_statement);
     }
+
+    // エラー関係の関数群
+    /// パースエラーを返す関数
+    pub fn get_errors(&self) -> Vec<String> {
+        return self.errors.clone();
+    }
+    ///  異常なトークンを検出した場合のエラー
+    fn make_illegal_error(&mut self) {
+        let msg = "異常なトークンを検出しました。".to_string();
+        self.errors.push(msg);
+    }
+
+    /// 文のパースに失敗した場合のエラー
+    fn make_statement_parse_error(&mut self) {
+        let msg = "文をパースできませんでした。".to_string();
+        self.errors.push(msg);
+    }
+
+    /// 先読み時に発生したエラー用をフォーマットを使って生成して追加する。
+    fn make_peek_error(&mut self, expect_type: TokenType) {
+        let msg = format!(
+            "トークン型{:?}を期待して読み込みましたが、実際に読み込んだトークン型は{:?}でした。",
+            expect_type,
+            self.current_token.get_token_type()
+        );
+        self.errors.push(msg);
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use std::io::stderr;
+
+    use crate::ast::*;
     use crate::lexer::Lexer;
     use crate::parser::Parser;
-    use crate::ast::*;
     use crate::token::*;
-    use std::io::stderr;
 
     /// let文の構文解析用のテスト
     #[test]
@@ -217,7 +227,9 @@ mod test {
                 // TODO 束縛された値の確認
                 // assert_eq!(value.get_value(), "");
             }
-            _ => { assert!(false, "let文ではありません。"); }
+            _ => {
+                assert!(false, "let文ではありません。");
+            }
         }
     }
 
@@ -228,7 +240,11 @@ mod test {
             return;
         }
         let mut e_writer = std::io::stderr();
-        writeln!(e_writer, "パースエラーが{}件発生しました。", errors.len());
+        writeln!(
+            e_writer,
+            "パースエラーが{}件発生しました。",
+            errors.len()
+        );
         for error in errors {
             writeln!(e_writer, "{}", error);
         }

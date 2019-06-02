@@ -8,7 +8,7 @@ pub struct Lexer {
     // 入力に対する現在の位置(現在の文字の位置)
     read_position: usize,
     // これから読み込む位置(現在の文字の次の位置)
-    ch: Option<char>,        // 現在検査中の文字
+    ch: Option<char>, // 現在検査中の文字
 }
 
 impl Lexer {
@@ -49,12 +49,11 @@ impl Lexer {
 
     /// 一文字分先を読むソッド
     fn peek_char(&self) -> Option<char> {
-        return
-            if self.read_position >= self.input.len() {
-                None
-            } else {
-                self.input.chars().nth(self.read_position)
-            };
+        return if self.read_position >= self.input.len() {
+            None
+        } else {
+            self.input.chars().nth(self.read_position)
+        };
     }
 
     /// 一文字分を呼んで状態を更新するメソッド
@@ -103,7 +102,6 @@ impl Lexer {
         }
         return self.input.as_str()[position..self.position].to_string();
     }
-
 
     /// 入力の次の部分を呼んでToken構造体を生成するメソッド
     pub fn next_token(&mut self) -> Token {
@@ -207,7 +205,9 @@ impl Lexer {
             }
         };
 
-        if tok.is_none() { tok = Some(Token::new(TokenType::ILLEGAL, "")); }
+        if tok.is_none() {
+            tok = Some(Token::new(TokenType::ILLEGAL, ""));
+        }
         return tok.unwrap();
     }
 }

@@ -1,4 +1,5 @@
-use std::io::{Read, Write, BufReader, BufWriter, BufRead, LineWriter};
+use std::io::{BufRead, BufReader, BufWriter, LineWriter, Read, Write};
+
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 
@@ -12,15 +13,15 @@ pub fn start(reader: impl Read, writer: impl Write) {
     let mut r = BufReader::new(reader);
     let mut w = LineWriter::new(writer);
 
-     loop {
-        write!(w, "{}",  PROMPT);
+    loop {
+        write!(w, "{}", PROMPT);
         w.flush();
         let mut line = "".to_string();
         let res = r.read_line(&mut line);
-        if res.is_err(){
+        if res.is_err() {
             break;
         }
-        if line.trim() == FINISH_KEY{
+        if line.trim() == FINISH_KEY {
             break;
         }
         let mut lexer = Lexer::new(&line);

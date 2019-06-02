@@ -51,12 +51,14 @@ impl TokenType {
         return vec![
             ("fn".to_string(), TokenType::FUNCTION),
             ("let".to_string(), TokenType::LET),
-            ("if".to_string(),TokenType::IF),
-            ("else".to_string(),TokenType::ELSE),
-            ("return".to_string(),TokenType::RETURN),
-            ("true".to_string(),TokenType::TRUE),
-            ("false".to_string(),TokenType::FALSE),
-        ].into_iter().collect();
+            ("if".to_string(), TokenType::IF),
+            ("else".to_string(), TokenType::ELSE),
+            ("return".to_string(), TokenType::RETURN),
+            ("true".to_string(), TokenType::TRUE),
+            ("false".to_string(), TokenType::FALSE),
+        ]
+            .into_iter()
+            .collect();
     }
 
     /// 引数が予約語か識別句かどうかでTokenTypeを返す
@@ -69,7 +71,6 @@ impl TokenType {
     }
 }
 
-
 /// 読んだ文字とそれに対応する識別句からなるトークン
 #[derive(Debug, Eq, PartialEq)]
 pub struct Token {
@@ -78,7 +79,6 @@ pub struct Token {
 }
 
 impl Token {
-
     /// 初期化関数
     pub fn new(token_type: TokenType, literal: &str) -> Self {
         return Token {
@@ -99,14 +99,14 @@ impl Token {
 
     /// LETトークンであることの判定
     pub fn is_let_token(&self) -> bool {
-        match self.token_type{
+        match self.token_type {
             TokenType::LET => true,
-            _  => false,
+            _ => false,
         }
     }
 
     /// 不正なトークン結果を表す。
-    pub fn is_illegal_token(&self) -> bool{
+    pub fn is_illegal_token(&self) -> bool {
         match self.token_type {
             TokenType::ILLEGAL => true,
             _ => false,
@@ -135,8 +135,7 @@ mod test {
 
     #[test]
     fn test_next_token() {
-        let input =
-            "
+        let input = "
         =+(){},;
         let five = 5;
         let ten = 10;
