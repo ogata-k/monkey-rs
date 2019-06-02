@@ -72,16 +72,15 @@ impl Parser {
     /// 字句解析器の結果を元にMonkeyプログラムを表す解釈木を生成する関数
     pub fn parse_program(&mut self) -> Option<Program> {
         let mut program = Program::new();
-        let eof: Token = Token::new(TokenType::EOF, "");
 
         loop {
             // 正常終了
-            if self.current_token == eof {
+            if self.current_token.token_type_is(TokenType::EOF) {
                 break;
             }
 
             // 異常終了
-            if self.current_token.is_illegal_token() {
+            if self.current_token.token_type_is(TokenType::ILLEGAL) {
                 self.make_illegal_error();
                 break;
             }
@@ -102,16 +101,22 @@ impl Parser {
 
     /// 文用のパーサー
     pub fn parse_statement(&mut self) -> Option<Statement> {
-        if self.current_token.is_let_token() {
-            return self.parse_let_statement();
-        } else {
-            return None;
+        match &self.current_token {
+            tok if tok.token_type_is(TokenType::LET) => {
+                return self.parse_let_statement();
+            },
+            tok if tok.token_type_is(TokenType::RETURN) => {
+                return self.parse_return_statement();
+            },
+            _ => {
+                return None;
+            }
         }
     }
 
     /// let文をパースするためのパーサー
     fn parse_let_statement(&mut self) -> Option<Statement> {
-        if !self.current_token.is_let_token() {
+        if !self.current_token_is(TokenType::LET) {
             return None;
         }
         if !self.expect_peek(TokenType::IDENT) {
@@ -122,8 +127,8 @@ impl Parser {
             value: self.current_token.get_literal(),
         };
 
-        // TODO ident_stubをのちにパースされた式で置き換える
-        let ident_stub = Expression::Identifier {
+        // TODO expression_stubをのちにパースされた式で置き換える
+        let expression_stub = Expression::Identifier {
             token: Token::new(TokenType::IDENT, &self.current_token.get_literal()),
             value: self.current_token.get_literal(),
         };
@@ -138,9 +143,35 @@ impl Parser {
         let let_statement = Statement::LetStatement {
             token: Token::new(TokenType::LET, "let"),
             name: Box::new(ident),
-            value: Box::new(ident_stub),
+            value: Box::new(expression_stub),
         };
         return Some(let_statement);
+    }
+
+    /// return文をパースするためパーサー
+    fn parse_return_statement(&mut self) -> Option<Statement> {
+        if !self.current_token_is(TokenType::RETURN) {
+            self.make_peek_error(TokenType::RETURN);
+            return None;
+        }
+        self.next_token();
+
+        // TODO セミコロンに遭遇するまで式を読み飛ばしてしまっている。
+        while !self.current_token_is(TokenType::SEMICOLON) {
+            self.next_token();
+        }
+
+        // TODO expressionをパースできるようになったらパースしたものと置き換える
+        let expression_stub = Expression::Identifier {
+            token: Token::new(TokenType::IDENT, ""),
+            value: "".to_string(),
+        };
+
+        let return_stmt = Statement::ReturnStatement {
+            token: Token::new(TokenType::RETURN, "return"),
+            return_value: Box::new(expression_stub),
+        };
+        return Some(return_stmt);
     }
 
     // エラー関係の関数群
@@ -180,6 +211,69 @@ mod test {
     use crate::parser::Parser;
     use crate::token::*;
 
+    /// パースエラーがあれば出力する関数
+    fn check_parser_errors(parser: &Parser) {
+        use std::io::Write;
+        let errors = parser.get_errors();
+        if errors.len() == 0 {
+            return;
+        }
+        let mut e_writer = std::io::stderr();
+        writeln!(
+            e_writer,
+            "\n\nパースエラーが{}件発生しました。",
+            errors.len()
+        );
+        for error in errors {
+            writeln!(e_writer, "{}", error);
+        }
+        writeln!(e_writer, "");
+    }
+
+    /// return 文の構文解析用のテスト
+    #[test]
+    fn test_return_statements() {
+        let input = "
+            return 5;
+            return 10;
+            return 993322;
+        ";
+
+        let mut lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program_opt = parser.parse_program();
+        check_parser_errors(&parser);
+
+        if program_opt.is_none() {
+            assert!(false, "return文のパースに失敗しました。");
+        }
+        let program = program_opt.unwrap();
+        let statements = &program.statements;
+        if statements.len() != 3 {
+            assert!(false, "return文の個数が不適切です。");
+        }
+
+        for stmt in program.statements {
+            test_return_statement(&stmt);
+        }
+    }
+
+    // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
+    fn test_return_statement(stmt: &Statement) {
+        match stmt {
+            Statement::ReturnStatement { token, return_value } => {
+                // トークンのreturnで始まってるか確認
+                assert_eq!(token.get_literal(), "return");
+                // TODO 戻り値の確認
+                // assert_eq!(return_value.get_value(), "");
+            }
+            _ => {
+                assert!(false, "return文ではありません。");
+            }
+        }
+    }
+
     /// let文の構文解析用のテスト
     #[test]
     fn test_let_statements() {
@@ -187,23 +281,20 @@ mod test {
             let x = 5;
             let y = 10;
             let foobar = 838383;
-            let z 4;
-            let = 10;
-            let 838383;
         ";
 
         let mut lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
 
         let program_opt = parser.parse_program();
+        check_parser_errors(&parser);
+
         if program_opt.is_none() {
-            check_parser_errors(&parser);
             assert!(false, "let文のパースに失敗しました。");
         }
         let program = program_opt.unwrap();
         let statements = &program.statements;
         if statements.len() != 3 {
-            check_parser_errors(&parser);
             assert!(false, "let文の個数が不適切です。");
         }
 
@@ -213,7 +304,6 @@ mod test {
             let stmt = &statements[i];
             test_let_statement(stmt, test);
         }
-        check_parser_errors(&parser);
     }
 
     // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
@@ -230,23 +320,6 @@ mod test {
             _ => {
                 assert!(false, "let文ではありません。");
             }
-        }
-    }
-
-    fn check_parser_errors(parser: &Parser) {
-        use std::io::Write;
-        let errors = parser.get_errors();
-        if errors.len() == 0 {
-            return;
-        }
-        let mut e_writer = std::io::stderr();
-        writeln!(
-            e_writer,
-            "パースエラーが{}件発生しました。",
-            errors.len()
-        );
-        for error in errors {
-            writeln!(e_writer, "{}", error);
         }
     }
 }

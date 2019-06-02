@@ -97,20 +97,9 @@ impl Token {
         return self.token_type.clone();
     }
 
-    /// LETトークンであることの判定
-    pub fn is_let_token(&self) -> bool {
-        match self.token_type {
-            TokenType::LET => true,
-            _ => false,
-        }
-    }
-
-    /// 不正なトークン結果を表す。
-    pub fn is_illegal_token(&self) -> bool {
-        match self.token_type {
-            TokenType::ILLEGAL => true,
-            _ => false,
-        }
+    /// トークンが期待した型であることの判定
+    pub fn token_type_is(&self, expect: TokenType) -> bool {
+        return self.token_type == expect;
     }
 }
 

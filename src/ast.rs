@@ -13,17 +13,26 @@ pub enum Statement {
     /// <token> <name> = <value>;
     /// つまり、let <name> = <value>;
     LetStatement {
-        token: Token,
         // Token::LET
+        token: Token,
         name: Box<Expression>,  // 束縛対象の変数名、Expression::Identifierのみ
         value: Box<Expression>, // 束縛する対象
     },
+    /// return文用のノード
+    /// <token> <return_value>;
+    /// つまり、return <return_value>;
+    ReturnStatement {
+        // Token::Return
+        token: Token,
+        return_value: Box<Expression>, // 戻り値
+    }
 }
 
 impl Node for Statement {
     fn token_literal(&self) -> String {
         match self {
             Statement::LetStatement { token, name, value } => token.get_literal(),
+            Statement::ReturnStatement { token, return_value } => token.get_literal(),
         }
     }
 }
