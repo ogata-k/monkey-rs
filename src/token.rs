@@ -78,6 +78,7 @@ pub struct Token {
 }
 
 impl Token {
+
     /// 初期化関数
     pub fn new(token_type: TokenType, literal: &str) -> Self {
         return Token {
@@ -89,6 +90,27 @@ impl Token {
     /// 束縛した値を返す
     pub fn get_literal(&self) -> String {
         return self.literal.to_string();
+    }
+
+    /// トークン型を返す
+    pub fn get_token_type(&self) -> TokenType {
+        return self.token_type.clone();
+    }
+
+    /// LETトークンであることの判定
+    pub fn is_let_token(&self) -> bool {
+        match self.token_type{
+            TokenType::LET => true,
+            _  => false,
+        }
+    }
+
+    /// 不正なトークン結果を表す。
+    pub fn is_illegal_token(&self) -> bool{
+        match self.token_type {
+            TokenType::ILLEGAL => true,
+            _ => false,
+        }
     }
 }
 

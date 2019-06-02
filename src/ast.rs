@@ -62,15 +62,19 @@ impl Expression {
 }
 
 /// Monkeyプログラムをあらわす構造体
+#[derive(Debug)]
 pub struct Program {
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 impl Program {
-    /// programのstatementsのゲッター
-    pub fn get_statements(&self) -> &Vec<Statement> {
-        return &self.statements;
-}
+    /// 初期化関数
+    pub fn new() -> Program {
+        return Program{
+            statements: Vec::new(),
+        };
+    }
+
 
 /// ルートノードであるprogramノードのリテラルを返す
     pub fn token_literal(&self) -> String {
