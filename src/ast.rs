@@ -31,8 +31,8 @@ pub enum Statement {
 impl Node for Statement {
     fn token_literal(&self) -> String {
         match self {
-            Statement::LetStatement { token, name, value } => token.get_literal(),
-            Statement::ReturnStatement { token, return_value } => token.get_literal(),
+            Statement::LetStatement { token, name: _, value: _ } => token.get_literal(),
+            Statement::ReturnStatement { token, return_value: _ } => token.get_literal(),
         }
     }
 }
@@ -52,7 +52,7 @@ pub enum Expression {
 impl Node for Expression {
     fn token_literal(&self) -> String {
         match self {
-            Expression::Identifier { token, value } => token.get_literal(),
+            Expression::Identifier { token, value: _ } => token.get_literal(),
         }
     }
 }
@@ -61,7 +61,7 @@ impl Expression {
     /// 保持する値のゲッター
     pub fn get_value(&self) -> String {
         match self {
-            Expression::Identifier { token, value } => value.to_string(),
+            Expression::Identifier { token: _, value } => value.to_string(),
         }
     }
 }

@@ -1,7 +1,7 @@
-use std::io::{BufRead, BufReader, BufWriter, LineWriter, Read, Write};
+use std::io::{BufRead, BufReader, LineWriter, Read, Write};
 
 use crate::lexer::Lexer;
-use crate::token::{Token, TokenType};
+use crate::token::TokenType;
 
 /// 入力促進メッセージ
 const PROMPT: &str = ">> ";
@@ -14,8 +14,8 @@ pub fn start(reader: impl Read, writer: impl Write) {
     let mut w = LineWriter::new(writer);
 
     loop {
-        write!(w, "{}", PROMPT);
-        w.flush();
+        write!(w, "{}", PROMPT).unwrap();
+        w.flush().unwrap();
         let mut line = "".to_string();
         let res = r.read_line(&mut line);
         if res.is_err() {
@@ -27,10 +27,13 @@ pub fn start(reader: impl Read, writer: impl Write) {
         let mut lexer = Lexer::new(&line);
 
         while let tok = lexer.next_token() {
-            if tok == Token::new(TokenType::EOF, "") {
+            if tok.token_type_is(TokenType::EOF) {
                 break;
             }
-            write!(w, "{:?}\n", tok);
+            if tok.token_type_is(TokenType::ILLEGAL) {
+                panic!("異常な入力を検知しました。終了します。");
+            }
+            write!(w, "{:?}\n", tok).unwrap();
         }
     }
 }

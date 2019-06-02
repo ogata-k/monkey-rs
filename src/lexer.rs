@@ -36,7 +36,7 @@ impl Lexer {
     fn skip_whitespace(&mut self) {
         loop {
             if let Some(c) = self.ch {
-                if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
                     self.read_char();
                 } else {
                     break;

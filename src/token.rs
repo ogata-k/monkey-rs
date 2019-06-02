@@ -114,7 +114,7 @@ mod test {
         let input = "";
         let tests = [Token::new(TokenType::EOF, "")];
         let mut lexer = Lexer::new(input);
-        for (i, tt) in tests.iter().enumerate() {
+        for tt in tests.iter() {
             let tok = lexer.next_token();
 
             assert_eq!(tok.token_type, tt.token_type);
@@ -235,7 +235,7 @@ mod test {
 
         let mut lexer = Lexer::new(input);
 
-        for (i, tt) in tests.iter().enumerate() {
+        for tt in tests.iter() {
             let tok = lexer.next_token();
 
             assert_eq!(tok.token_type, tt.token_type);

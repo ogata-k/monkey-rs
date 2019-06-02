@@ -204,12 +204,9 @@ impl Parser {
 
 #[cfg(test)]
 mod test {
-    use std::io::stderr;
-
     use crate::ast::*;
     use crate::lexer::Lexer;
     use crate::parser::Parser;
-    use crate::token::*;
 
     /// パースエラーがあれば出力する関数
     fn check_parser_errors(parser: &Parser) {
@@ -223,11 +220,11 @@ mod test {
             e_writer,
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
-        );
+        ).unwrap();
         for error in errors {
-            writeln!(e_writer, "{}", error);
+            writeln!(e_writer, "{}", error).unwrap();
         }
-        writeln!(e_writer, "");
+        writeln!(e_writer, "").unwrap();
     }
 
     /// return 文の構文解析用のテスト
@@ -239,7 +236,7 @@ mod test {
             return 993322;
         ";
 
-        let mut lexer = Lexer::new(input);
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
 
         let program_opt = parser.parse_program();
@@ -262,7 +259,7 @@ mod test {
     // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
     fn test_return_statement(stmt: &Statement) {
         match stmt {
-            Statement::ReturnStatement { token, return_value } => {
+            Statement::ReturnStatement { token, return_value: _ } => {
                 // トークンのreturnで始まってるか確認
                 assert_eq!(token.get_literal(), "return");
                 // TODO 戻り値の確認
@@ -283,7 +280,7 @@ mod test {
             let foobar = 838383;
         ";
 
-        let mut lexer = Lexer::new(input);
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
 
         let program_opt = parser.parse_program();
@@ -309,7 +306,7 @@ mod test {
     // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
     fn test_let_statement(stmt: &Statement, test: &str) {
         match stmt {
-            Statement::LetStatement { token, name, value } => {
+            Statement::LetStatement { token, name, value: _ } => {
                 // トークンのletで始まってるか確認
                 assert_eq!(token.get_literal(), "let");
                 // 束縛変数名の確認
