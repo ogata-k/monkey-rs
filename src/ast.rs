@@ -51,7 +51,7 @@ impl ToString for Statement {
                     write!(s, " {} {}", " =", &v).unwrap();
                 }
                 write!(s, "{}", ";").unwrap();
-            },
+            }
         }
         return s;
     }
@@ -85,7 +85,7 @@ impl ToString for Expression {
         match self {
             Expression::NonValue => {
                 write!(s, "{}", "").unwrap();
-            },
+            }
             Expression::Identifier { token: _, value } => {
                 write!(s, "{}", value).unwrap();
             }
@@ -175,5 +175,31 @@ impl Program {
         } else {
             return "".to_string();
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ast::*;
+    use crate::token::*;
+
+    #[test]
+    fn test_to_string() {
+        let program = Program {
+            statements: vec![
+                Statement::LetStatement {
+                    token: Token::new(TokenType::LET, "let"),
+                    name: Box::new(Expression::Identifier {
+                        token: Token::new(TokenType::IDENT, "myVar"),
+                        value: "myVar".to_string(),
+                    }),
+                    value: Box::new(Expression::Identifier {
+                        token: Token::new(TokenType::IDENT, "anotherVar"),
+                        value: "anotherVar".to_string(),
+                    }),
+                },
+            ]
+        };
+        assert_eq!(program.to_string(), "let myVar = anotherVar;".to_string());
     }
 }
