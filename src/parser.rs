@@ -6,6 +6,7 @@ use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 
 /// 前置関数
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub enum PrefixFns {
     // 何か
 }
@@ -17,6 +18,7 @@ impl PrefixFns {
 }
 
 /// 中置関数
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub enum InfixFns {
     // 何か
 }
@@ -69,6 +71,16 @@ impl Parser {
             prefix_parse_fns: Vec::new().into_iter().collect(),
             infix_parse_fns: Vec::new().into_iter().collect()
         };
+    }
+
+    /// 前置関数を登録する関数
+    pub fn register_prefix(&mut self, token_type: TokenType, prefix_fn: PrefixFns) {
+        self.prefix_parse_fns.insert(token_type, prefix_fn);
+    }
+
+    /// 中置関数を登録する関数
+    pub fn register_infix(&mut self, token_type: TokenType, infix_fn: InfixFns) {
+        self.infix_parse_fns.insert(token_type, infix_fn);
     }
 
     /// 先のトークンの型を確認する関数
