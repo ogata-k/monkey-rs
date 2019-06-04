@@ -1,7 +1,31 @@
+use std::collections::HashMap;
+
 use crate::ast::*;
 use crate::ast::Program;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
+
+/// 前置関数
+pub enum PrefixFns {
+    // 何か
+}
+
+impl PrefixFns {
+    pub fn get_fn(&self) -> Box<(Fn() -> Expression)> {
+        unimplemented!()
+    }
+}
+
+/// 中置関数
+pub enum InfixFns {
+    // 何か
+}
+
+impl InfixFns {
+    pub fn get_fn(&self) -> Box<(Fn(Expression) -> Expression)> {
+        unimplemented!()
+    }
+}
 
 /// パーサー(構文解析器)
 pub struct Parser {
@@ -12,6 +36,11 @@ pub struct Parser {
     peek_token: Token,
     // 一つ先のトークン
     errors: Vec<String>, // パースシテ失敗したときのエラー文の集まり
+
+    // 前置構文解析関数
+    prefix_parse_fns: HashMap<TokenType, PrefixFns>,
+    // 中置構文解析関数
+    infix_parse_fns: HashMap<TokenType, InfixFns>
 }
 
 impl std::fmt::Debug for Parser {
@@ -37,6 +66,8 @@ impl Parser {
             current_token: first,
             peek_token: second,
             errors: Vec::new(),
+            prefix_parse_fns: Vec::new().into_iter().collect(),
+            infix_parse_fns: Vec::new().into_iter().collect()
         };
     }
 

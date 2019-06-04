@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 /// Tokenとして便指揮できる識別句の一覧
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum TokenType {
     // 特殊な状態
     ILLEGAL,
