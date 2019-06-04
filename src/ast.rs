@@ -70,6 +70,11 @@ impl Node for Statement {
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     // ここにExpressionに関する構造体を定義していく
+    ExpressionStatement {
+        token: Token,
+        // 式の最初のトークン
+        expression: Box<Expression>,
+    },
     NonValue,
     /// 識別子を表すノード
     Identifier {
@@ -89,6 +94,11 @@ impl ToString for Expression {
             Expression::Identifier { token: _, value } => {
                 write!(s, "{}", value).unwrap();
             }
+            Expression::ExpressionStatement { token: _, expression } => {
+                if **expression != Expression::NonValue {
+                    write!(s, "{}", expression.to_string()).unwrap();
+                }
+            }
         }
         return s;
     }
@@ -99,6 +109,7 @@ impl Node for Expression {
         match self {
             Expression::Identifier { token, value: _ } => token.get_literal(),
             Expression::NonValue => { "".to_string() }
+            Expression::ExpressionStatement { token, expression: _ } => token.get_literal(),
         }
     }
 }
@@ -109,40 +120,11 @@ impl Expression {
         match self {
             Expression::Identifier { token: _, value } => value.to_string(),
             Expression::NonValue => "".to_string(),
+            Expression::ExpressionStatement { token: _, expression } => expression.get_value()
         }
     }
 }
 
-/// 式文用のノード
-#[derive(Debug, PartialEq)]
-pub enum ExpressionStatement {
-    ExpressionStatement {
-        token: Token,
-        // 式の最初のトークン
-        expression: Expression,
-    }
-}
-
-impl ToString for ExpressionStatement {
-    fn to_string(&self) -> String {
-        match self {
-            ExpressionStatement::ExpressionStatement { token: _, expression } => {
-                if *expression != Expression::NonValue {
-                    return expression.to_string();
-                }
-                return "".to_string();
-            }
-        }
-    }
-}
-
-impl Node for ExpressionStatement {
-    fn token_literal(&self) -> String {
-        match self {
-            ExpressionStatement::ExpressionStatement { token, expression: _ } => token.get_literal(),
-        }
-    }
-}
 
 /// Monkeyプログラムをあらわす構造体
 #[derive(Debug)]
