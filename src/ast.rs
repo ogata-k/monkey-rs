@@ -11,6 +11,11 @@ pub trait Node: ToString {
 #[derive(Debug, PartialEq)]
 pub enum Statement {
     // ここにStatementに関する構造体を定義していく
+    ExpressionStatement {
+        token: Token,
+        // 式の最初のトークン
+        expression: Box<Expression>,
+    },
     /// let文用のノード
     /// <token> <name> = <value>;
     /// つまり、let <name> = <value>;
@@ -52,6 +57,11 @@ impl ToString for Statement {
                 }
                 write!(s, "{}", ";").unwrap();
             }
+            Statement::ExpressionStatement { token: _, expression } => {
+                if **expression != Expression::NonValue {
+                    write!(s, "{}", expression.to_string()).unwrap();
+                }
+            }
         }
         return s;
     }
@@ -62,6 +72,7 @@ impl Node for Statement {
         match self {
             Statement::LetStatement { token, name: _, value: _ } => token.get_literal(),
             Statement::ReturnStatement { token, return_value: _ } => token.get_literal(),
+            Statement::ExpressionStatement { token, expression: _ } => token.get_literal(),
         }
     }
 }
@@ -70,11 +81,7 @@ impl Node for Statement {
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     // ここにExpressionに関する構造体を定義していく
-    ExpressionStatement {
-        token: Token,
-        // 式の最初のトークン
-        expression: Box<Expression>,
-    },
+
     NonValue,
     /// 識別子を表すノード
     Identifier {
@@ -94,11 +101,6 @@ impl ToString for Expression {
             Expression::Identifier { token: _, value } => {
                 write!(s, "{}", value).unwrap();
             }
-            Expression::ExpressionStatement { token: _, expression } => {
-                if **expression != Expression::NonValue {
-                    write!(s, "{}", expression.to_string()).unwrap();
-                }
-            }
         }
         return s;
     }
@@ -109,7 +111,6 @@ impl Node for Expression {
         match self {
             Expression::Identifier { token, value: _ } => token.get_literal(),
             Expression::NonValue => { "".to_string() }
-            Expression::ExpressionStatement { token, expression: _ } => token.get_literal(),
         }
     }
 }
@@ -120,7 +121,6 @@ impl Expression {
         match self {
             Expression::Identifier { token: _, value } => value.to_string(),
             Expression::NonValue => "".to_string(),
-            Expression::ExpressionStatement { token: _, expression } => expression.get_value()
         }
     }
 }
