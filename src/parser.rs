@@ -12,7 +12,7 @@ pub enum PrefixFns {
 }
 
 impl PrefixFns {
-    pub fn get_fn(&self) -> Box<(Fn() -> Expression)> {
+    pub fn get_fn(&self) -> Box<(Fn() -> Option<Expression>)> {
         unimplemented!()
     }
 }
@@ -24,9 +24,26 @@ pub enum InfixFns {
 }
 
 impl InfixFns {
-    pub fn get_fn(&self) -> Box<(Fn(Expression) -> Expression)> {
+    pub fn get_fn(&self) -> Box<(Fn(Expression) -> Option<Expression>)> {
         unimplemented!()
     }
+}
+
+/// 式で認識する演算
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Clone, Hash)]
+pub enum Opt {
+    LOWEST,
+    EQUALS,
+    // ==
+    LESSGREATER,
+    // > or <
+    SUM,
+    // +
+    PRODUCT,
+    //*
+    PREFIX,
+    // -x or !x
+    CALL,        // myFunction(x)
 }
 
 /// パーサー(構文解析器)
@@ -42,7 +59,7 @@ pub struct Parser {
     // 前置構文解析関数
     prefix_parse_fns: HashMap<TokenType, PrefixFns>,
     // 中置構文解析関数
-    infix_parse_fns: HashMap<TokenType, InfixFns>
+    infix_parse_fns: HashMap<TokenType, InfixFns>,
 }
 
 impl std::fmt::Debug for Parser {
@@ -63,14 +80,15 @@ impl Parser {
     pub fn new(mut lexer: Lexer) -> Self {
         let first = lexer.next_token();
         let second = lexer.next_token();
-        return Parser {
+        let mut parser = Parser {
             lexer,
             current_token: first,
             peek_token: second,
             errors: Vec::new(),
-            prefix_parse_fns: Vec::new().into_iter().collect(),
-            infix_parse_fns: Vec::new().into_iter().collect()
+            prefix_parse_fns: HashMap::new(),
+            infix_parse_fns: HashMap::new(),
         };
+        return parser;
     }
 
     /// 前置関数を登録する関数
@@ -147,12 +165,12 @@ impl Parser {
         match &self.current_token {
             tok if tok.token_type_is(TokenType::LET) => {
                 return self.parse_let_statement();
-            },
+            }
             tok if tok.token_type_is(TokenType::RETURN) => {
                 return self.parse_return_statement();
-            },
+            }
             _ => {
-                return None;
+                return self.parse_expression_statement();
             }
         }
     }
@@ -217,6 +235,41 @@ impl Parser {
         return Some(return_stmt);
     }
 
+    /// 式文をパースするためのパーサー
+    fn parse_expression_statement(&mut self) -> Option<Statement> {
+        let c_tok = self.current_token.clone();
+        let expression_opt = self.parse_expression(Opt::LOWEST);
+        if expression_opt.is_none() {
+            return None;
+        }
+        let expression = expression_opt.unwrap();
+        if self.peek_token_is(TokenType::SEMICOLON) {
+            self.next_token();
+        }
+        let stmt = Statement::ExpressionStatement {
+            token: c_tok,
+            expression: Box::new(expression),
+        };
+        return Some(stmt);
+    }
+
+    /// 式をパースする関数
+    fn parse_expression(&self, opt: Opt) -> Option<Expression> {
+        return match self.current_token.get_token_type() {
+            TokenType::IDENT => self.parse_identifier(),
+            // TODO ほかのパターンも実装
+            _ => panic!("まだ実装していません"),
+        };
+    }
+
+    /// 認識句用の式をパースする関数
+    fn parse_identifier(&self) -> Option<Expression> {
+        return Some(Expression::Identifier {
+            token: self.current_token.clone(),
+            value: self.current_token.get_literal(),
+        });
+    }
+
     // エラー関係の関数群
     /// パースエラーを返す関数
     pub fn get_errors(&self) -> Vec<String> {
@@ -263,7 +316,8 @@ mod test {
             e_writer,
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
-        ).unwrap();
+        )
+            .unwrap();
         for error in errors {
             writeln!(e_writer, "{}", error).unwrap();
         }
@@ -302,7 +356,10 @@ mod test {
     // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
     fn test_return_statement(stmt: &Statement) {
         match stmt {
-            Statement::ReturnStatement { token, return_value: _ } => {
+            Statement::ReturnStatement {
+                token,
+                return_value: _,
+            } => {
                 // トークンのreturnで始まってるか確認
                 assert_eq!(token.get_literal(), "return");
                 // TODO 戻り値の確認
@@ -349,7 +406,11 @@ mod test {
     // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
     fn test_let_statement(stmt: &Statement, test: &str) {
         match stmt {
-            Statement::LetStatement { token, name, value: _ } => {
+            Statement::LetStatement {
+                token,
+                name,
+                value: _,
+            } => {
                 // トークンのletで始まってるか確認
                 assert_eq!(token.get_literal(), "let");
                 // 束縛変数名の確認
@@ -360,6 +421,50 @@ mod test {
             _ => {
                 assert!(false, "let文ではありません。");
             }
+        }
+    }
+
+    /// 識別子をパースするテスト
+    #[test]
+    pub fn test_identifier_expression() {
+        let input = "foobar";
+
+        let mut lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program_opt = parser.parse_program();
+        check_parser_errors(&parser);
+        if program_opt.is_none() {
+            assert!(false, "識別子のパースに失敗しました。");
+        }
+        let program = program_opt.unwrap();
+
+        if program.statements.len() != 1 {
+            assert!(
+                false,
+                "適切な個数の識別子をパースすることができませんでした。"
+            );
+        }
+
+        let stmt = &program.statements[0];
+        if let Statement::ExpressionStatement {
+            token: _,
+            expression,
+        } = stmt
+        {
+            if let Expression::Identifier {
+                ref token,
+                ref value,
+            } = **expression
+            {
+                if &token.get_literal() != "foobar" {
+                    assert!(false, "input's token literal is not \"foobar\"");
+                }
+                if value != "foobar" {
+                    assert!(false, "token literal is not \"foobar\"");
+                }
+            }
+        } else {
+            assert!(false, "input is not expression-statement");
         }
     }
 }
