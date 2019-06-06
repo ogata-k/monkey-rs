@@ -257,6 +257,7 @@ impl Parser {
     fn parse_expression(&self, opt: Opt) -> Option<Expression> {
         return match self.current_token.get_token_type() {
             TokenType::IDENT => self.parse_identifier(),
+            TokenType::INT => self.parse_integer_literal(),
             // TODO ほかのパターンも実装
             _ => panic!("まだ実装していません"),
         };
@@ -270,7 +271,14 @@ impl Parser {
         });
     }
 
-    // TODO OOooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+    /// 整数リテラルのパーサー
+    fn parse_integer_literal(&self) -> Option<Expression> {
+        let lit = self.current_token.get_literal().parse::<i64>().ok()?;
+        return Some(Expression::IntegerLiteral {
+            token: self.current_token.clone(),
+            value: lit,
+        });
+    }
 
     // エラー関係の関数群
     /// パースエラーを返す関数
