@@ -49,7 +49,10 @@ impl ToString for Statement {
                 }
                 write!(s, "{}", ";").unwrap();
             }
-            Statement::ReturnStatement { token, return_value } => {
+            Statement::ReturnStatement {
+                token,
+                return_value,
+            } => {
                 write!(s, "{}", token.get_literal() + " ").unwrap();
                 let v = return_value.to_string();
                 if v != "".to_string() {
@@ -57,7 +60,10 @@ impl ToString for Statement {
                 }
                 write!(s, "{}", ";").unwrap();
             }
-            Statement::ExpressionStatement { token: _, expression } => {
+            Statement::ExpressionStatement {
+                token: _,
+                expression,
+            } => {
                 if **expression != Expression::NonValue {
                     write!(s, "{}", expression.to_string()).unwrap();
                 }
@@ -70,9 +76,19 @@ impl ToString for Statement {
 impl Node for Statement {
     fn token_literal(&self) -> String {
         match self {
-            Statement::LetStatement { token, name: _, value: _ } => token.get_literal(),
-            Statement::ReturnStatement { token, return_value: _ } => token.get_literal(),
-            Statement::ExpressionStatement { token, expression: _ } => token.get_literal(),
+            Statement::LetStatement {
+                token,
+                name: _,
+                value: _,
+            } => token.get_literal(),
+            Statement::ReturnStatement {
+                token,
+                return_value: _,
+            } => token.get_literal(),
+            Statement::ExpressionStatement {
+                token,
+                expression: _,
+            } => token.get_literal(),
         }
     }
 }
@@ -81,7 +97,6 @@ impl Node for Statement {
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     // ここにExpressionに関する構造体を定義していく
-
     NonValue,
     /// 識別子を表すノード
     Identifier {
@@ -110,7 +125,7 @@ impl Node for Expression {
     fn token_literal(&self) -> String {
         match self {
             Expression::Identifier { token, value: _ } => token.get_literal(),
-            Expression::NonValue => { "".to_string() }
+            Expression::NonValue => "".to_string(),
         }
     }
 }
@@ -124,7 +139,6 @@ impl Expression {
         }
     }
 }
-
 
 /// Monkeyプログラムをあらわす構造体
 #[derive(Debug)]
@@ -168,19 +182,17 @@ mod test {
     #[test]
     fn test_to_string() {
         let program = Program {
-            statements: vec![
-                Statement::LetStatement {
-                    token: Token::new(TokenType::LET, "let"),
-                    name: Box::new(Expression::Identifier {
-                        token: Token::new(TokenType::IDENT, "myVar"),
-                        value: "myVar".to_string(),
-                    }),
-                    value: Box::new(Expression::Identifier {
-                        token: Token::new(TokenType::IDENT, "anotherVar"),
-                        value: "anotherVar".to_string(),
-                    }),
-                },
-            ]
+            statements: vec![Statement::LetStatement {
+                token: Token::new(TokenType::LET, "let"),
+                name: Box::new(Expression::Identifier {
+                    token: Token::new(TokenType::IDENT, "myVar"),
+                    value: "myVar".to_string(),
+                }),
+                value: Box::new(Expression::Identifier {
+                    token: Token::new(TokenType::IDENT, "anotherVar"),
+                    value: "anotherVar".to_string(),
+                }),
+            }],
         };
         assert_eq!(program.to_string(), "let myVar = anotherVar;".to_string());
     }

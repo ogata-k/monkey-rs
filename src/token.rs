@@ -72,7 +72,7 @@ impl TokenType {
 }
 
 /// 読んだ文字とそれに対応する識別句からなるトークン
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Token {
     token_type: TokenType,
     literal: String,
