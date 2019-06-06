@@ -104,6 +104,11 @@ pub enum Expression {
         // Token::Ident
         value: String, // 識別子が保持する値
     },
+    /// 整数リテラル用のノード
+    IntegerLiteral {
+        token: Token,
+        value: i64,
+    }
 }
 
 impl ToString for Expression {
@@ -116,6 +121,9 @@ impl ToString for Expression {
             Expression::Identifier { token: _, value } => {
                 write!(s, "{}", value).unwrap();
             }
+            Expression::IntegerLiteral { token: _, value } => {
+                write!(s, "{}", value).unwrap();
+            }
         }
         return s;
     }
@@ -126,6 +134,7 @@ impl Node for Expression {
         match self {
             Expression::Identifier { token, value: _ } => token.get_literal(),
             Expression::NonValue => "".to_string(),
+            Expression::IntegerLiteral { token, value: _ } => token.get_literal(),
         }
     }
 }
@@ -136,6 +145,7 @@ impl Expression {
         match self {
             Expression::Identifier { token: _, value } => value.to_string(),
             Expression::NonValue => "".to_string(),
+            Expression::IntegerLiteral { token: _, value } => format!("{}", value),
         }
     }
 }

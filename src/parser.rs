@@ -270,6 +270,8 @@ impl Parser {
         });
     }
 
+    // TODO OOooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
     // エラー関係の関数群
     /// パースエラーを返す関数
     pub fn get_errors(&self) -> Vec<String> {
@@ -434,7 +436,7 @@ mod test {
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
         if program_opt.is_none() {
-            assert!(false, "識別子のパースに失敗しました。");
+            assert!(false, "プログラムのパースに失敗しました。");
         }
         let program = program_opt.unwrap();
 
@@ -457,14 +459,55 @@ mod test {
             } = **expression
             {
                 if &token.get_literal() != "foobar" {
-                    assert!(false, "input's token literal is not \"foobar\"");
+                    assert!(false, "入力から\"foobar\"識別子を得ることができませんでした");
                 }
                 if value != "foobar" {
-                    assert!(false, "token literal is not \"foobar\"");
+                    assert!(false, "トークンのリテラルが\"foobar\"でありませんでした。");
                 }
             }
         } else {
-            assert!(false, "input is not expression-statement");
+            assert!(false, "入力が式文ではありません");
+        }
+    }
+
+    ///  整数リテラルをパースするテスト
+    #[test]
+    fn test_integer_literal_expression() {
+        let input = "5";
+
+        let mut lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program_opt = parser.parse_program();
+        check_parser_errors(&parser);
+        if program_opt.is_none() {
+            assert!(false, "プログラムのパースに失敗しました。");
+        }
+        let program = program_opt.unwrap();
+
+        if program.statements.len() != 1 {
+            assert!(
+                false,
+                "適切な個数の整数リテラルをパースすることができませんでした。"
+            );
+        }
+
+        let stmt = &program.statements[0];
+        if let Statement::ExpressionStatement {
+            token: _,
+            expression
+        } = stmt {
+            if let Expression::IntegerLiteral {
+                ref token,
+                value
+            } = **expression {
+                assert_eq!(token.get_literal(), "5");
+                assert_eq!(value, 5_i64);
+            }
+        } else {
+            assert!(
+                false,
+                "入力が式文ではありません"
+            );
         }
     }
 }
