@@ -108,7 +108,15 @@ pub enum Expression {
     IntegerLiteral {
         token: Token,
         value: i64,
-    }
+    },
+    /// 前置演算子用のノード
+    PrefixExpression {
+        token: Token,
+        // 判断に使ったトークン
+        operator: String,
+        // 演算子の記号
+        right_exp: Box<Expression>, // 前置演算子の引数(すなわち、右辺式)
+    },
 }
 
 impl ToString for Expression {
@@ -124,6 +132,13 @@ impl ToString for Expression {
             Expression::IntegerLiteral { token: _, value } => {
                 write!(s, "{}", value).unwrap();
             }
+            Expression::PrefixExpression {
+                token: _,
+                operator,
+                right_exp,
+            } => {
+                write!(s, "{}{}", operator, right_exp.to_string()).unwrap();
+            }
         }
         return s;
     }
@@ -135,6 +150,11 @@ impl Node for Expression {
             Expression::Identifier { token, value: _ } => token.get_literal(),
             Expression::NonValue => "".to_string(),
             Expression::IntegerLiteral { token, value: _ } => token.get_literal(),
+            Expression::PrefixExpression {
+                token,
+                operator: _,
+                right_exp: _,
+            } => token.get_literal(),
         }
     }
 }
@@ -146,6 +166,11 @@ impl Expression {
             Expression::Identifier { token: _, value } => value.to_string(),
             Expression::NonValue => "".to_string(),
             Expression::IntegerLiteral { token: _, value } => format!("{}", value),
+            Expression::PrefixExpression {
+                token: _,
+                operator,
+                right_exp: _,
+            } => operator.to_string(),
         }
     }
 }

@@ -43,7 +43,7 @@ pub enum Opt {
     //*
     PREFIX,
     // -x or !x
-    CALL,        // myFunction(x)
+    CALL, // myFunction(x)
 }
 
 /// パーサー(構文解析器)
@@ -254,10 +254,11 @@ impl Parser {
     }
 
     /// 式をパースする関数
-    fn parse_expression(&self, opt: Opt) -> Option<Expression> {
+    fn parse_expression(&mut self, opt: Opt) -> Option<Expression> {
         return match self.current_token.get_token_type() {
             TokenType::IDENT => self.parse_identifier(),
             TokenType::INT => self.parse_integer_literal(),
+            TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
             // TODO ほかのパターンも実装
             _ => panic!("まだ実装していません"),
         };
@@ -278,6 +279,20 @@ impl Parser {
             token: self.current_token.clone(),
             value: lit,
         });
+    }
+
+    /// 前置演算子付きの式をパースする関数
+    fn parse_prefix_expression(&mut self) -> Option<Expression> {
+        // ここに来るということは前置演算子を持つ式だと確定してるはず
+        let tok = self.current_token.clone();
+        self.next_token();
+        let exp = self.parse_expression(Opt::PREFIX)?;
+        let expression = Expression::PrefixExpression {
+            operator: tok.get_literal().clone(),
+            token: tok,
+            right_exp: Box::new(exp),
+        };
+        return Some(expression);
     }
 
     // エラー関係の関数群
@@ -313,6 +328,7 @@ mod test {
     use crate::ast::*;
     use crate::lexer::Lexer;
     use crate::parser::Parser;
+    use crate::token::{Token, TokenType};
 
     /// パースエラーがあれば出力する関数
     fn check_parser_errors(parser: &Parser) {
@@ -467,10 +483,16 @@ mod test {
             } = **expression
             {
                 if &token.get_literal() != "foobar" {
-                    assert!(false, "入力から\"foobar\"識別子を得ることができませんでした");
+                    assert!(
+                        false,
+                        "入力から\"foobar\"識別子を得ることができませんでした"
+                    );
                 }
                 if value != "foobar" {
-                    assert!(false, "トークンのリテラルが\"foobar\"でありませんでした。");
+                    assert!(
+                        false,
+                        "トークンのリテラルが\"foobar\"でありませんでした。"
+                    );
                 }
             }
         } else {
@@ -502,20 +524,74 @@ mod test {
         let stmt = &program.statements[0];
         if let Statement::ExpressionStatement {
             token: _,
-            expression
-        } = stmt {
-            if let Expression::IntegerLiteral {
-                ref token,
-                value
-            } = **expression {
+            expression,
+        } = stmt
+        {
+            if let Expression::IntegerLiteral { ref token, value } = **expression {
                 assert_eq!(token.get_literal(), "5");
                 assert_eq!(value, 5_i64);
             }
         } else {
-            assert!(
-                false,
-                "入力が式文ではありません"
-            );
+            assert!(false, "入力が式文ではありません");
+        }
+    }
+
+    /// 前置演算子をパースするテスト
+    #[test]
+    fn test_prefix_expressions() {
+        let prefix_tests = vec![
+            // (input, operator_lit, int_val)
+            ("!5;", "!", 5_i64),
+            ("-15", "-", 15_i64),
+        ];
+
+        for (input, prefix, v) in prefix_tests {
+            let mut lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
+            let program_opt = parser.parse_program();
+            check_parser_errors(&parser);
+            if program_opt.is_none() {
+                assert!(false, "プログラムのパースに失敗しました。");
+            }
+            let program = program_opt.unwrap();
+
+            if program.statements.len() != 1 {
+                assert!(
+                    false,
+                    "適切な個数の整数リテラルをパースすることができませんでした。"
+                );
+            }
+
+            let stmt = &program.statements[0];
+            if let Statement::ExpressionStatement {
+                token: _,
+                expression,
+            } = stmt
+            {
+                if let Expression::PrefixExpression {
+                    operator,
+                    token,
+                    right_exp: exp,
+                } = &**expression
+                {
+                    assert_eq!(&token.get_literal(), operator);
+                    assert_eq!(operator, prefix);
+                    test_integer_literal(v, &**exp);
+                }
+            } else {
+                assert!(false, "入力が式文ではありません");
+            }
+        }
+    }
+
+    /// 整数の前につく前置演算子をテストした際に整数値をテストするヘルパー関数
+    fn test_integer_literal(v: i64, exp: &Expression) {
+        if let Expression::IntegerLiteral { token, value } = exp {
+            assert_eq!(token.get_token_type(), TokenType::INT);
+            assert_eq!(token.get_literal(), format!("{}", v));
+            assert_eq!(*value, v);
+        } else {
+            assert!(false, "整数リテラルではありませんでした。")
         }
     }
 }
