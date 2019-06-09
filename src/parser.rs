@@ -296,8 +296,8 @@ impl Parser {
     /// 中置演算子式を優先規則を元にパースする関数
     fn parse_infix_expression(&mut self, left: Expression) -> Option<Expression> {
         let current = self.current_token.clone();
-        self.next_token();
         let precedence = self.current_precedence();
+        self.next_token();
         let expression = Expression::InfixExpression {
             operator: current.get_literal(),
             token: current,
@@ -338,9 +338,9 @@ impl Parser {
 #[cfg(test)]
 mod test {
     use crate::ast::*;
-    use crate::lexer::Lexer;
-    use crate::parser::Parser;
-    use crate::token::{Token, TokenType};
+    use crate::lexer::*;
+    use crate::parser::*;
+    use crate::token::*;
 
     /// パースエラーがあれば出力する関数
     fn check_parser_errors(parser: &Parser) {
@@ -676,10 +676,10 @@ mod test {
             ("a * b * c", "((a * b) * c)"),
             ("a * b / c", "((a * b) / c)"),
             ("a + b / c", "(a + (b / c))"),
-            ("a + b * c + d / e - f", "(((a + (b * c)) + (d/e)) - f)"),
+            ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
             ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
             ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
-            ("5 < 4 !== 3 > 4", "((5 < 4) != (3 > 4))"),
+            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
             (
                 "3 + 4 * 5 == 3 * 1 + 4 * 5",
                 "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
@@ -699,7 +699,7 @@ mod test {
             }
             let program = program_opt.unwrap();
             let actual = program.to_string();
-            assert!(&actual == *expect, "{} => {:?}::{}", input, program, actual);
+            assert!(&actual == *expect, "{} => {:?}\n{} ?= {}", input, program, actual, expect);
             assert_eq!(&actual, *expect);
         }
     }
