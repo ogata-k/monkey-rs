@@ -109,13 +109,25 @@ pub enum Expression {
         token: Token,
         value: i64,
     },
-    /// 前置演算子用のノード
+    /// 前置演算子式用のノード
     PrefixExpression {
-        token: Token,
         // 判断に使ったトークン
-        operator: String,
+        token: Token,
         // 演算子の記号
-        right_exp: Box<Expression>, // 前置演算子の引数(すなわち、右辺式)
+        operator: String,
+        // 前置演算子の引数(すなわち、右辺式)
+        right_exp: Box<Expression>,
+    },
+    /// 中置算子式用のノード
+    InfixExpression {
+        // 判断に使ったトークン
+        token: Token,
+        // 演算子の記号
+        operator: String,
+        // 左辺式
+        left_exp: Box<Expression>,
+        // 右辺式
+        right_exp: Box<Expression>,
     },
 }
 
@@ -139,6 +151,9 @@ impl ToString for Expression {
             } => {
                 write!(s, "{}{}", operator, right_exp.to_string()).unwrap();
             }
+            Expression::InfixExpression { token: _, operator, left_exp, right_exp } => {
+                write!(s, "({} {} {})", left_exp.to_string(), operator, right_exp.to_string());
+            },
         }
         return s;
     }
@@ -154,6 +169,12 @@ impl Node for Expression {
                 token,
                 operator: _,
                 right_exp: _,
+            } => token.get_literal(),
+            Expression::InfixExpression {
+                token,
+                operator: _,
+                left_exp: _,
+                right_exp: _
             } => token.get_literal(),
         }
     }
@@ -171,6 +192,12 @@ impl Expression {
                 operator,
                 right_exp: _,
             } => operator.to_string(),
+            Expression::InfixExpression {
+                token: _,
+                operator,
+                left_exp: _,
+                right_exp: _
+            } => operator.to_string()
         }
     }
 }

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::ast::*;
 use crate::ast::Program;
 use crate::lexer::Lexer;
@@ -551,6 +549,63 @@ mod test {
             assert_eq!(*value, v);
         } else {
             assert!(false, "整数リテラルではありませんでした。")
+        }
+    }
+
+
+    /// 整数リテラルの中置演算子をパースするテスト
+    #[test]
+    fn test_infix_expressions() {
+        let infix_tests = vec![
+            // (input: &str, left_value: i64, operator: &str, right_value: i64)
+            ("5 + 5;", 5_i64, "+", 5_i64),
+            ("5 - 5;", 5_i64, "-", 5_i64),
+            ("5 * 5;", 5_i64, "*", 5_i64),
+            ("5 / 5;", 5_i64, "/", 5_i64),
+            ("5 > 5;", 5_i64, ">", 5_i64),
+            ("5 < 5;", 5_i64, "<", 5_i64),
+            ("5 == 5;", 5_i64, "==", 5_i64),
+            ("5 != 5;", 5_i64, "!=", 5_i64),
+        ];
+
+        for (input, left_value, infix_op, right_value) in infix_tests {
+            let mut lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
+            let program_opt = parser.parse_program();
+            check_parser_errors(&parser);
+            if program_opt.is_none() {
+                assert!(false, "プログラムのパースに失敗しました。");
+            }
+            let program = program_opt.unwrap();
+
+            if program.statements.len() != 1 {
+                assert!(
+                    false,
+                    "適切な個数の整数リテラルをパースすることができませんでした。"
+                );
+            }
+
+            let stmt = &program.statements[0];
+            if let Statement::ExpressionStatement {
+                token: _,
+                expression,
+            } = stmt
+            {
+                if let Expression::InfixExpression {
+                    operator,
+                    token,
+                    left_exp,
+                    right_exp,
+                } = &**expression
+                {
+                    assert_eq!(&token.get_literal(), operator);
+                    assert_eq!(operator, infix_op);
+                    test_integer_literal(left_value, &**left_exp);
+                    test_integer_literal(right_value, &**right_exp);
+                }
+            } else {
+                assert!(false, "入力が式文ではありません");
+            }
         }
     }
 }
