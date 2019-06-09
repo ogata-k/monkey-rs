@@ -44,6 +44,17 @@ impl std::fmt::Debug for Parser {
 }
 
 impl Parser {
+    /// 中置演算子の優先順位を返す関数
+    fn precedences(token_type: &TokenType) -> Opt {
+        match token_type {
+            TokenType::EQ | TokenType::NEQ => Opt::EQUALS,
+            TokenType::PLUS | TokenType::MINUS => Opt::SUM,
+            TokenType::ASTERISK | TokenType::SLASH => Opt::PRODUCT,
+            TokenType::LT | TokenType::GT => Opt::LESSGREATER,
+            _ => Opt::LOWEST,
+        }
+    }
+
     // 基本的な関数群
     /// 初期化関数
     pub fn new(mut lexer: Lexer) -> Self {
@@ -85,6 +96,17 @@ impl Parser {
             return false;
         }
     }
+
+    /// 現在読み込んでいるトークンの優先順位を取得する関数
+    fn current_precedence(&self) -> Opt {
+        Parser::precedences(&self.current_token.get_token_type())
+    }
+
+    /// 次に読み込むトークンの優先順位を取得する関数
+    fn peek_precedence(&self) -> Opt {
+        Parser::precedences(&self.peek_token.get_token_type())
+    }
+
 
     // パース処理
     /// 字句解析器の結果を元にMonkeyプログラムを表す解釈木を生成する関数
