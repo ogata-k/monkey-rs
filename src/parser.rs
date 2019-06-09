@@ -5,30 +5,6 @@ use crate::ast::Program;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 
-/// 前置関数
-#[derive(Debug, Eq, PartialEq, Hash)]
-pub enum PrefixFns {
-    // 何か
-}
-
-impl PrefixFns {
-    pub fn get_fn(&self) -> Box<(Fn() -> Option<Expression>)> {
-        unimplemented!()
-    }
-}
-
-/// 中置関数
-#[derive(Debug, Eq, PartialEq, Hash)]
-pub enum InfixFns {
-    // 何か
-}
-
-impl InfixFns {
-    pub fn get_fn(&self) -> Box<(Fn(Expression) -> Option<Expression>)> {
-        unimplemented!()
-    }
-}
-
 /// 式で認識する演算
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Clone, Hash)]
 pub enum Opt {
@@ -55,11 +31,6 @@ pub struct Parser {
     peek_token: Token,
     // 一つ先のトークン
     errors: Vec<String>, // パースシテ失敗したときのエラー文の集まり
-
-    // 前置構文解析関数
-    prefix_parse_fns: HashMap<TokenType, PrefixFns>,
-    // 中置構文解析関数
-    infix_parse_fns: HashMap<TokenType, InfixFns>,
 }
 
 impl std::fmt::Debug for Parser {
@@ -85,20 +56,8 @@ impl Parser {
             current_token: first,
             peek_token: second,
             errors: Vec::new(),
-            prefix_parse_fns: HashMap::new(),
-            infix_parse_fns: HashMap::new(),
         };
         return parser;
-    }
-
-    /// 前置関数を登録する関数
-    pub fn register_prefix(&mut self, token_type: TokenType, prefix_fn: PrefixFns) {
-        self.prefix_parse_fns.insert(token_type, prefix_fn);
-    }
-
-    /// 中置関数を登録する関数
-    pub fn register_infix(&mut self, token_type: TokenType, infix_fn: InfixFns) {
-        self.infix_parse_fns.insert(token_type, infix_fn);
     }
 
     /// 先のトークンの型を確認する関数
