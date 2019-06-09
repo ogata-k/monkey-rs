@@ -10,12 +10,12 @@ fn main() {
         w,
         "Hello! This is the Monkey programming language written by Rust."
     )
-        .unwrap();
+    .unwrap();
     writeln!(w, "Feel free to type in commands.").unwrap();
     writeln!(
         w,
         "If you want to finish REPL, input Ctrl+D and push Enter."
     )
-        .unwrap();
+    .unwrap();
     start(r, w);
 }

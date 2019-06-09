@@ -355,7 +355,7 @@ mod test {
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
         )
-            .unwrap();
+        .unwrap();
         for error in errors {
             writeln!(e_writer, "{}", error).unwrap();
         }
@@ -697,7 +697,9 @@ mod test {
                     "プログラムをパースすることができませんでした。"
                 );
             }
-            let actual = program_opt.unwrap().to_string();
+            let program = program_opt.unwrap();
+            let actual = program.to_string();
+            assert!(&actual == *expect, "{} => {:?}::{}", input, program, actual);
             assert_eq!(&actual, *expect);
         }
     }

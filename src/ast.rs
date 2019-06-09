@@ -164,7 +164,7 @@ impl ToString for Expression {
                     operator,
                     right_exp.to_string()
                 )
-                    .unwrap();
+                .unwrap();
             }
         }
         return s;

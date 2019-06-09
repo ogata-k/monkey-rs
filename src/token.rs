@@ -57,8 +57,8 @@ impl TokenType {
             ("true".to_string(), TokenType::TRUE),
             ("false".to_string(), TokenType::FALSE),
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
     }
 
     /// 引数が予約語か識別句かどうかでTokenTypeを返す
