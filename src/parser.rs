@@ -97,6 +97,12 @@ impl Parser {
         }
     }
 
+    /// 次に読み込む演算子が中置演算子のトークンか調べる関数
+    fn peek_token_is_infix(&self) -> bool {
+        // 中置演算子の優先順位表をもちいて最低順位以外に変換できれば中置演算子ではない
+        self.peek_precedence() != Opt::LOWEST
+    }
+
     /// 現在読み込んでいるトークンの優先順位を取得する関数
     fn current_precedence(&self) -> Opt {
         Parser::precedences(&self.current_token.get_token_type())
@@ -233,14 +239,28 @@ impl Parser {
     }
 
     /// 式をパースする関数
-    fn parse_expression(&mut self, opt: Opt) -> Option<Expression> {
-        return match self.current_token.get_token_type() {
+    fn parse_expression(&mut self, precedence: Opt) -> Option<Expression> {
+        let mut left = match self.current_token.get_token_type() {
             TokenType::IDENT => self.parse_identifier(),
             TokenType::INT => self.parse_integer_literal(),
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
-            // TODO ほかのパターンも実装
-            _ => panic!("まだ実装していません"),
-        };
+            _ => None,
+        }?;
+
+        loop {
+            // 文末終了で抜けるか次に解析しようとしていた中置演算子の優先順位が今の優先順位より低いときに終了する
+            // 括弧はまだ
+            if self.peek_token_is(TokenType::SEMICOLON) || precedence >= self.peek_precedence() {
+                break;
+            }
+            if self.peek_token_is_infix() {
+                self.next_token();
+                left = self.parse_infix_expression(left)?;
+            } else {
+                return Some(left);
+            }
+        }
+        return Some(left);
     }
 
     /// 認識句用の式をパースする関数
@@ -270,6 +290,20 @@ impl Parser {
             operator: tok.get_literal().clone(),
             token: tok,
             right_exp: Box::new(exp),
+        };
+        return Some(expression);
+    }
+
+    /// 中置演算子式を優先規則を元にパースする関数
+    fn parse_infix_expression(&mut self, left: Expression) -> Option<Expression> {
+        let current = self.current_token.clone();
+        self.next_token();
+        let precedence = self.current_precedence();
+        let expression = Expression::InfixExpression {
+            operator: current.get_literal(),
+            token: current,
+            left_exp: Box::new(left),
+            right_exp: Box::new(self.parse_expression(precedence)?),
         };
         return Some(expression);
     }
@@ -603,7 +637,8 @@ mod test {
             if program.statements.len() != 1 {
                 assert!(
                     false,
-                    "適切な個数の整数リテラルをパースすることができませんでした。"
+                    "適切な個数の整数リテラルをパースすることができませんでした。: {:?}",
+                    program.statements
                 );
             }
 
