@@ -665,4 +665,37 @@ mod test {
             }
         }
     }
+
+    /// 括弧と関数を除いて、異なる優先度で式をパースできているかのテスト
+    #[test]
+    fn test_operator_precedences() {
+        let tests = [
+            // (input, expect)
+            ("-a * b", "((-a) * b)"),
+            ("!-a", "(!(-a))"),
+            ("a + b + c", "((a + b) + c)"),
+            ("a + b - c", "((a + b) - c)"),
+            ("a * b * c", "((a * b) * c)"),
+            ("a * b / c", "((a * b) / c)"),
+            ("a + b / c", "(a + (b / c))"),
+            ("a + b * c + d / e - f", "(((a + (b * c)) + (d/e)) - f)"),
+            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+            ("5 < 4 !== 3 > 4", "((5 < 4) != (3 > 4))"),
+            ("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+        ];
+
+        for (input, expect) in tests.iter() {
+            let lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
+            let program_opt = parser.parse_program();
+            check_parser_errors(&parser);
+            if program_opt.is_none() {
+                assert!(false, "プログラムをパースすることができませんでした。");
+            }
+            let actual = program_opt.unwrap().to_string();
+            assert_eq!(&actual, *expect);
+        }
+    }
+
 }

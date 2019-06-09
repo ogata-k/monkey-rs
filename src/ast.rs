@@ -149,7 +149,7 @@ impl ToString for Expression {
                 operator,
                 right_exp,
             } => {
-                write!(s, "{}{}", operator, right_exp.to_string()).unwrap();
+                write!(s, "({}{})", operator, right_exp.to_string()).unwrap();
             }
             Expression::InfixExpression { token: _, operator, left_exp, right_exp } => {
                 write!(s, "({} {} {})", left_exp.to_string(), operator, right_exp.to_string()).unwrap();
