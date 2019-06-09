@@ -113,7 +113,6 @@ impl Parser {
         Parser::precedences(&self.peek_token.get_token_type())
     }
 
-
     // パース処理
     /// 字句解析器の結果を元にMonkeyプログラムを表す解釈木を生成する関数
     pub fn parse_program(&mut self) -> Option<Program> {
@@ -608,7 +607,6 @@ mod test {
         }
     }
 
-
     /// 整数リテラルの中置演算子をパースするテスト
     #[test]
     fn test_infix_expressions() {
@@ -682,7 +680,10 @@ mod test {
             ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
             ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
             ("5 < 4 !== 3 > 4", "((5 < 4) != (3 > 4))"),
-            ("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
         ];
 
         for (input, expect) in tests.iter() {
@@ -691,7 +692,10 @@ mod test {
             let program_opt = parser.parse_program();
             check_parser_errors(&parser);
             if program_opt.is_none() {
-                assert!(false, "プログラムをパースすることができませんでした。");
+                assert!(
+                    false,
+                    "プログラムをパースすることができませんでした。"
+                );
             }
             let actual = program_opt.unwrap().to_string();
             assert_eq!(&actual, *expect);

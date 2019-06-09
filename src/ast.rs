@@ -151,9 +151,21 @@ impl ToString for Expression {
             } => {
                 write!(s, "({}{})", operator, right_exp.to_string()).unwrap();
             }
-            Expression::InfixExpression { token: _, operator, left_exp, right_exp } => {
-                write!(s, "({} {} {})", left_exp.to_string(), operator, right_exp.to_string()).unwrap();
-            },
+            Expression::InfixExpression {
+                token: _,
+                operator,
+                left_exp,
+                right_exp,
+            } => {
+                write!(
+                    s,
+                    "({} {} {})",
+                    left_exp.to_string(),
+                    operator,
+                    right_exp.to_string()
+                )
+                    .unwrap();
+            }
         }
         return s;
     }
@@ -174,7 +186,7 @@ impl Node for Expression {
                 token,
                 operator: _,
                 left_exp: _,
-                right_exp: _
+                right_exp: _,
             } => token.get_literal(),
         }
     }
@@ -196,8 +208,8 @@ impl Expression {
                 token: _,
                 operator,
                 left_exp: _,
-                right_exp: _
-            } => operator.to_string()
+                right_exp: _,
+            } => operator.to_string(),
         }
     }
 }
