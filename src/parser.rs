@@ -60,7 +60,7 @@ impl Parser {
     pub fn new(mut lexer: Lexer) -> Self {
         let first = lexer.next_token();
         let second = lexer.next_token();
-        let mut parser = Parser {
+        let parser = Parser {
             lexer,
             current_token: first,
             peek_token: second,
@@ -362,6 +362,8 @@ mod test {
         writeln!(e_writer, "").unwrap();
     }
 
+    ///
+
     /// return 文の構文解析用のテスト
     #[test]
     fn test_return_statements() {
@@ -464,10 +466,14 @@ mod test {
 
     /// 識別子をパースするテスト
     #[test]
-    pub fn test_identifier_expression() {
+    fn test_identifier_expression() {
         let input = "foobar";
+        test_identifier(input, "foobar")
+    }
 
-        let mut lexer = Lexer::new(input);
+    ///  識別子をパースするテストのヘルパー関数
+    fn test_identifier(input: &str, res: &str) {
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
@@ -494,16 +500,18 @@ mod test {
                 ref value,
             } = **expression
             {
-                if &token.get_literal() != "foobar" {
+                if &token.get_literal() != res {
                     assert!(
                         false,
-                        "入力から\"foobar\"識別子を得ることができませんでした"
+                        "入力から\"{}\"識別子を得ることができませんでした",
+                        res
                     );
                 }
                 if value != "foobar" {
                     assert!(
                         false,
-                        "トークンのリテラルが\"foobar\"でありませんでした。"
+                        "トークンのリテラルが\"{}\"でありませんでした。",
+                        res
                     );
                 }
             }
@@ -517,7 +525,7 @@ mod test {
     fn test_integer_literal_expression() {
         let input = "5";
 
-        let mut lexer = Lexer::new(input);
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
@@ -558,7 +566,7 @@ mod test {
         ];
 
         for (input, prefix, v) in prefix_tests {
-            let mut lexer = Lexer::new(input);
+            let lexer = Lexer::new(input);
             let mut parser = Parser::new(lexer);
             let program_opt = parser.parse_program();
             check_parser_errors(&parser);
@@ -623,7 +631,7 @@ mod test {
         ];
 
         for (input, left_value, infix_op, right_value) in infix_tests {
-            let mut lexer = Lexer::new(input);
+            let lexer = Lexer::new(input);
             let mut parser = Parser::new(lexer);
             let program_opt = parser.parse_program();
             check_parser_errors(&parser);
