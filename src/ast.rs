@@ -64,9 +64,7 @@ impl ToString for Statement {
                 token: _,
                 expression,
             } => {
-                if **expression != Expression::NonValue {
                     write!(s, "{}", expression.to_string()).unwrap();
-                }
             }
         }
         return s;
@@ -97,7 +95,6 @@ impl Node for Statement {
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     // ここにExpressionに関する構造体を定義していく
-    NonValue,
     /// 識別子を表すノード
     Identifier {
         token: Token,
@@ -135,9 +132,6 @@ impl ToString for Expression {
     fn to_string(&self) -> String {
         let mut s = "".to_string();
         match self {
-            Expression::NonValue => {
-                write!(s, "{}", "").unwrap();
-            }
             Expression::Identifier { token: _, value } => {
                 write!(s, "{}", value).unwrap();
             }
@@ -175,7 +169,6 @@ impl Node for Expression {
     fn token_literal(&self) -> String {
         match self {
             Expression::Identifier { token, value: _ } => token.get_literal(),
-            Expression::NonValue => "".to_string(),
             Expression::IntegerLiteral { token, value: _ } => token.get_literal(),
             Expression::PrefixExpression {
                 token,
@@ -197,7 +190,6 @@ impl Expression {
     pub fn get_value(&self) -> String {
         match self {
             Expression::Identifier { token: _, value } => value.to_string(),
-            Expression::NonValue => "".to_string(),
             Expression::IntegerLiteral { token: _, value } => format!("{}", value),
             Expression::PrefixExpression {
                 token: _,
