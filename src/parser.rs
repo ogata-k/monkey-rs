@@ -742,6 +742,10 @@ mod test {
                 "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
             ),
             ("a + b + -c", "((a + b) + (-c))"),
+            ("true", "true"),
+            ("false", "false"),
+            ("3 > 5 == false", "((3 > 5) == false)"),
+            ("5 < 3 != true", "((5 < 3) != true)"),
         ];
 
         for (input, expect) in tests.iter() {
