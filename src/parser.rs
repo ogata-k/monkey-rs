@@ -745,7 +745,7 @@ mod test {
             ("true", "true"),
             ("false", "false"),
             ("3 > 5 == false", "((3 > 5) == false)"),
-            ("5 < 3 != true", "((5 < 3) != true)"),
+            ("5 < 3 != !!true", "((5 < 3) != (!(!true)))"),
         ];
 
         for (input, expect) in tests.iter() {
