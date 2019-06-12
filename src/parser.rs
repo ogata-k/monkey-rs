@@ -242,6 +242,7 @@ impl Parser {
         let mut left = match self.current_token.get_token_type() {
             TokenType::IDENT => self.parse_identifier(),
             TokenType::INT => self.parse_integer_literal(),
+            TokenType::TRUE | TokenType::FALSE => self.parse_boolean_literal(),
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
             _ => None,
         }?;
@@ -274,6 +275,15 @@ impl Parser {
     fn parse_integer_literal(&self) -> Option<Expression> {
         let lit = self.current_token.get_literal().parse::<i64>().ok()?;
         return Some(Expression::IntegerLiteral {
+            token: self.current_token.clone(),
+            value: lit,
+        });
+    }
+
+   /// 整数リテラルのパーサー
+    fn parse_boolean_literal(&self) -> Option<Expression> {
+        let lit = self.current_token.get_literal().parse::<bool>().ok()?;
+        return Some(Expression::BooleanLiteral {
             token: self.current_token.clone(),
             value: lit,
         });
@@ -355,14 +365,12 @@ mod test {
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
         )
-        .unwrap();
+            .unwrap();
         for error in errors {
             writeln!(e_writer, "{}", error).unwrap();
         }
         writeln!(e_writer, "").unwrap();
     }
-
-    ///
 
     /// return 文の構文解析用のテスト
     #[test]
@@ -556,6 +564,47 @@ mod test {
         }
     }
 
+    ///  整数リテラルをパースするテスト
+    #[test]
+    fn test_boolean_literal_expression() {
+        let tests = [
+            ("false", false),
+            ("true", true)
+        ];
+
+        for (input, res) in tests.to_vec().into_iter() {
+            let lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
+            let program_opt = parser.parse_program();
+            check_parser_errors(&parser);
+            if program_opt.is_none() {
+                assert!(false, "プログラムのパースに失敗しました。");
+            }
+            let program = program_opt.unwrap();
+
+            if program.statements.len() != 1 {
+                assert!(
+                    false,
+                    "適切な個数のリテラルをパースすることができませんでした。"
+                );
+            }
+
+            let stmt = &program.statements[0];
+            if let Statement::ExpressionStatement {
+                token: _,
+                expression,
+            } = stmt
+            {
+                if let Expression::BooleanLiteral { ref token, value } = **expression {
+                    assert_eq!(token.get_literal(), res.to_string());
+                    assert_eq!(value, res);
+                }
+            } else {
+                assert!(false, "入力が式文ではありません");
+            }
+        }
+    }
+
     /// 前置演算子をパースするテスト
     #[test]
     fn test_prefix_expressions() {
@@ -712,5 +761,4 @@ mod test {
             assert_eq!(&actual, *expect);
         }
     }
-
 }

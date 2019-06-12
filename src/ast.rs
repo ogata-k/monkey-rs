@@ -116,6 +116,11 @@ pub enum Expression {
         token: Token,
         value: i64,
     },
+    /// 真偽値リテラル用のノード
+    BooleanLiteral{
+        token: Token,
+        value: bool,
+    },
     /// 前置演算子式用のノード
     PrefixExpression {
         // 判断に使ったトークン
@@ -146,6 +151,9 @@ impl ToString for Expression {
                 write!(s, "{}", value).unwrap();
             }
             Expression::IntegerLiteral { token: _, value } => {
+                write!(s, "{}", value).unwrap();
+            }
+            Expression::BooleanLiteral { token: _, value } => {
                 write!(s, "{}", value).unwrap();
             }
             Expression::PrefixExpression {
@@ -180,6 +188,7 @@ impl Node for Expression {
         match self {
             Expression::Identifier { token, value: _ } => token.get_literal(),
             Expression::IntegerLiteral { token, value: _ } => token.get_literal(),
+            Expression::BooleanLiteral { token, value: _ } => token.get_literal(),
             Expression::PrefixExpression {
                 token,
                 operator: _,
@@ -198,6 +207,7 @@ impl Node for Expression {
         let tok = match self {
             Expression::Identifier{token, value:_ } => token,
             Expression::IntegerLiteral { token, value: _ } => token,
+            Expression::BooleanLiteral { token, value: _ } => token,
             Expression::PrefixExpression { token, operator: _, right_exp: _ } => token,
             Expression::InfixExpression { token, operator: _, left_exp: _, right_exp: _ } => token,
         };
@@ -211,6 +221,7 @@ impl Expression {
         match self {
             Expression::Identifier { token: _, value } => value.to_string(),
             Expression::IntegerLiteral { token: _, value } => format!("{}", value),
+            Expression::BooleanLiteral { token: _, value } => format!("{}", value),
             Expression::PrefixExpression {
                 token: _,
                 operator,
