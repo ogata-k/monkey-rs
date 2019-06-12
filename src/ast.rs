@@ -5,6 +5,7 @@ use crate::token::Token;
 /// ノード
 pub trait Node: ToString {
     fn token_literal(&self) -> String;
+    fn get_token(&self) -> Token;
 }
 
 /// 文用のノード
@@ -88,6 +89,15 @@ impl Node for Statement {
                 expression: _,
             } => token.get_literal(),
         }
+    }
+
+    fn get_token(&self) -> Token{
+        let tok =match self {
+            Statement::LetStatement {token, name:_, value:_ } => token,
+            Statement::ExpressionStatement { token, expression: _ } => token,
+            Statement::ReturnStatement { token, return_value: _ } => token,
+        };
+        return tok.clone();
     }
 }
 
@@ -182,6 +192,16 @@ impl Node for Expression {
                 right_exp: _,
             } => token.get_literal(),
         }
+    }
+
+    fn get_token(&self) -> Token {
+        let tok = match self {
+            Expression::Identifier{token, value:_ } => token,
+            Expression::IntegerLiteral { token, value: _ } => token,
+            Expression::PrefixExpression { token, operator: _, right_exp: _ } => token,
+            Expression::InfixExpression { token, operator: _, left_exp: _, right_exp: _ } => token,
+        };
+        return tok.clone();
     }
 }
 
