@@ -65,7 +65,7 @@ impl ToString for Statement {
                 token: _,
                 expression,
             } => {
-                    write!(s, "{}", expression.to_string()).unwrap();
+                write!(s, "{}", expression.to_string()).unwrap();
             }
         }
         return s;
@@ -91,11 +91,21 @@ impl Node for Statement {
         }
     }
 
-    fn get_token(&self) -> Token{
-        let tok =match self {
-            Statement::LetStatement {token, name:_, value:_ } => token,
-            Statement::ExpressionStatement { token, expression: _ } => token,
-            Statement::ReturnStatement { token, return_value: _ } => token,
+    fn get_token(&self) -> Token {
+        let tok = match self {
+            Statement::LetStatement {
+                token,
+                name: _,
+                value: _,
+            } => token,
+            Statement::ExpressionStatement {
+                token,
+                expression: _,
+            } => token,
+            Statement::ReturnStatement {
+                token,
+                return_value: _,
+            } => token,
         };
         return tok.clone();
     }
@@ -112,15 +122,9 @@ pub enum Expression {
         value: String, // 識別子が保持する値
     },
     /// 整数リテラル用のノード
-    IntegerLiteral {
-        token: Token,
-        value: i64,
-    },
+    IntegerLiteral { token: Token, value: i64 },
     /// 真偽値リテラル用のノード
-    BooleanLiteral{
-        token: Token,
-        value: bool,
-    },
+    BooleanLiteral { token: Token, value: bool },
     /// 前置演算子式用のノード
     PrefixExpression {
         // 判断に使ったトークン
@@ -140,6 +144,16 @@ pub enum Expression {
         left_exp: Box<Expression>,
         // 右辺式
         right_exp: Box<Expression>,
+    },
+    /// IF式用のノード
+    /// ELSEがあればAlternativeに追加
+    IfExpression {
+        token: Token,
+        condition: Box<Expression>,
+        // Statement::BlockStatementでStatementの集まりを表す。
+        consequence: Box<Statement>,
+        // Else節。Statement::BlockStatementでStatementの集まりを表す。
+        alternative: Box<Option<Statement>>,
     },
 }
 
@@ -178,6 +192,17 @@ impl ToString for Expression {
                 )
                 .unwrap();
             }
+            Expression::IfExpression {
+                token: _,
+                condition,
+                consequence,
+                alternative,
+            } => {
+                write!(s, "if{} {}", condition.to_string(), consequence.to_string()).unwrap();
+                if let Some(ref alt) = **alternative {
+                    write!(s, "else {}", alt.to_string()).unwrap();
+                }
+            }
         }
         return s;
     }
@@ -200,16 +225,37 @@ impl Node for Expression {
                 left_exp: _,
                 right_exp: _,
             } => token.get_literal(),
+            Expression::IfExpression {
+                token,
+                condition: _,
+                consequence: _,
+                alternative: _,
+            } => token.get_literal(),
         }
     }
 
     fn get_token(&self) -> Token {
         let tok = match self {
-            Expression::Identifier{token, value:_ } => token,
+            Expression::Identifier { token, value: _ } => token,
             Expression::IntegerLiteral { token, value: _ } => token,
             Expression::BooleanLiteral { token, value: _ } => token,
-            Expression::PrefixExpression { token, operator: _, right_exp: _ } => token,
-            Expression::InfixExpression { token, operator: _, left_exp: _, right_exp: _ } => token,
+            Expression::PrefixExpression {
+                token,
+                operator: _,
+                right_exp: _,
+            } => token,
+            Expression::InfixExpression {
+                token,
+                operator: _,
+                left_exp: _,
+                right_exp: _,
+            } => token,
+            Expression::IfExpression {
+                token,
+                condition: _,
+                consequence: _,
+                alternative: _,
+            } => token,
         };
         return tok.clone();
     }
@@ -233,6 +279,12 @@ impl Expression {
                 left_exp: _,
                 right_exp: _,
             } => operator.to_string(),
+            Expression::IfExpression {
+                token: _,
+                condition: _,
+                consequence: _,
+                alternative: _,
+            } => "".to_string(),
         }
     }
 }

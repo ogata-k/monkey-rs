@@ -281,7 +281,7 @@ impl Parser {
         });
     }
 
-   /// 整数リテラルのパーサー
+    /// 整数リテラルのパーサー
     fn parse_boolean_literal(&self) -> Option<Expression> {
         let lit = self.current_token.get_literal().parse::<bool>().ok()?;
         return Some(Expression::BooleanLiteral {
@@ -324,7 +324,6 @@ impl Parser {
         self.next_token();
         let exp = self.parse_expression(Opt::LOWEST);
         if !self.peek_token_is(TokenType::RPAREN) {
-
             return None;
         }
         self.next_token();
@@ -379,7 +378,7 @@ mod test {
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
         )
-            .unwrap();
+        .unwrap();
         for error in errors {
             writeln!(e_writer, "{}", error).unwrap();
         }
@@ -581,10 +580,7 @@ mod test {
     ///  整数リテラルをパースするテスト
     #[test]
     fn test_boolean_literal_expression() {
-        let tests = [
-            ("false", false),
-            ("true", true)
-        ];
+        let tests = [("false", false), ("true", true)];
 
         for (input, res) in tests.to_vec().into_iter() {
             let lexer = Lexer::new(input);
@@ -780,7 +776,14 @@ mod test {
             }
             let program = program_opt.unwrap();
             let actual = program.to_string();
-            assert!(&actual == *expect, "{} => {:?}\n{} ?= {}", input, program, actual, expect);
+            assert!(
+                &actual == *expect,
+                "{} => {:?}\n{} ?= {}",
+                input,
+                program,
+                actual,
+                expect
+            );
             assert_eq!(&actual, *expect);
         }
     }
