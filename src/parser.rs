@@ -244,6 +244,7 @@ impl Parser {
             TokenType::INT => self.parse_integer_literal(),
             TokenType::TRUE | TokenType::FALSE => self.parse_boolean_literal(),
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
+            TokenType::LPAREN => self.parse_grouped_expression(),
             _ => None,
         }?;
 
@@ -315,6 +316,19 @@ impl Parser {
             right_exp: Box::new(self.parse_expression(precedence)?),
         };
         return Some(expression);
+    }
+
+    /// 丸括弧で囲まれたグループの式をパースする
+    fn parse_grouped_expression(&mut self) -> Option<Expression> {
+        // ここに来るときは左丸括弧を読み込んだ時なのでひとつ消費して次から調べる
+        self.next_token();
+        let exp = self.parse_expression(Opt::LOWEST);
+        if !self.peek_token_is(TokenType::RPAREN) {
+
+            return None;
+        }
+        self.next_token();
+        return exp;
     }
 
     // エラー関係の関数群
@@ -746,6 +760,11 @@ mod test {
             ("false", "false"),
             ("3 > 5 == false", "((3 > 5) == false)"),
             ("5 < 3 != !!true", "((5 < 3) != (!(!true)))"),
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+            ("(5+5)*2", "((5 + 5) * 2)"),
+            ("2 / ( 5 - 5)", "(2 / (5 - 5))"),
+            ("-(5 + 5)", "(-(5 + 5))"),
+            ("!(true == true)", "(!(true == true))"),
         ];
 
         for (input, expect) in tests.iter() {
