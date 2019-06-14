@@ -240,6 +240,7 @@ impl Parser {
     /// 式をパースする関数
     fn parse_expression(&mut self, precedence: Opt) -> Option<Expression> {
         let mut left = match self.current_token.get_token_type() {
+            TokenType::IF => self.parse_if_expression(),
             TokenType::IDENT => self.parse_identifier(),
             TokenType::INT => self.parse_integer_literal(),
             TokenType::TRUE | TokenType::FALSE => self.parse_boolean_literal(),
@@ -316,6 +317,34 @@ impl Parser {
             right_exp: Box::new(self.parse_expression(precedence)?),
         };
         return Some(expression);
+    }
+
+    // TODO 後でelseにも対応する
+    /// if-else文をパースするプログラム
+    fn parse_if_expression(&mut self) -> Option<Expression>{
+        // ここに入ってきたときにはIFトークンを読み込んでいる状態なので読み進める
+        let tok = self.current_token.clone();
+        self.next_token();
+        let condition = self.parse_expression(Opt::LOWEST)?;
+        if self.peek_token_is(TokenType::RPAREN) {
+            self.next_token();
+            if !self.peek_token_is(TokenType::LBRACE) {
+                return None;
+            }
+            let consequence = self.parse_block_statement()?;
+            return Some(Expression::IfExpression {
+                token: tok,
+                condition: Box::new(condition),
+                consequence: Box::new(consequence),
+                alternative: Box::new(None)
+            });
+        }
+        return None;
+    }
+
+    /// 波括弧に囲まれた部分をパースする
+    fn parse_block_statement(&mut self) -> Option<Statement> {
+        unimplemented!()
     }
 
     /// 丸括弧で囲まれたグループの式をパースする
