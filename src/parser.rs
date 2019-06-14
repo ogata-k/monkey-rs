@@ -378,7 +378,7 @@ mod test {
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
         )
-        .unwrap();
+            .unwrap();
         for error in errors {
             writeln!(e_writer, "{}", error).unwrap();
         }
@@ -730,6 +730,45 @@ mod test {
             }
         }
     }
+
+    /// if式のifブロックのみをパースするテスト
+    #[test]
+    fn test_if_expression() {
+        let input = "if (x > y){ x }";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program_opt = parser.parse_program();
+        check_parser_errors(&parser);
+        if program_opt.is_none() {
+            assert!(false, "プログラムのパースに失敗しました。");
+        }
+        let program = program_opt.unwrap();
+                if program.statements.len() != 1 {
+                assert!(
+                    false,
+                    "適切な個数の整数リテラルをパースすることができませんでした。: {:?}",
+                    program.statements
+                );
+            }
+        if let Statement::ExpressionStatement {token:_, expression} = &program.statements[0]{
+            assert_eq!(expression.to_string(), "if (x > y) {x}");
+            if let Expression::IfExpression {
+                token:_,
+                condition,
+                consequence,
+                alternative
+            } = &**expression{
+                assert_eq!(condition.to_string(), "(x > y)");
+                assert_eq!(consequence.to_string(), "{x}");
+                assert!(alternative.is_none(), "else節が存在しています。");
+            } else {
+                assert!(false, "パース結果がif文ではありませんでした。");
+            }
+        } else {
+            assert!(false,"入力が式文ではありません。");
+        }
+}
 
     /// 括弧と関数を除いて、異なる優先度で式をパースできているかのテスト
     #[test]
