@@ -241,6 +241,7 @@ impl Parser {
     fn parse_expression(&mut self, precedence: Opt) -> Option<Expression> {
         let mut left = match self.current_token.get_token_type() {
             TokenType::IF => self.parse_if_expression(),
+            TokenType::FUNCTION => self.parse_function_literal(),
             TokenType::IDENT => self.parse_identifier(),
             TokenType::INT => self.parse_integer_literal(),
             TokenType::TRUE | TokenType::FALSE => self.parse_boolean_literal(),
@@ -291,6 +292,59 @@ impl Parser {
         });
     }
 
+    /// 関数リテラルのパーサー
+    fn parse_function_literal(&mut self) -> Option<Expression> {
+        // ここに来るときはFUNCTIONトークン型を読み込んでいる
+        let tok = self.current_token.clone();
+        self.next_token();
+        if !self.current_token_is(TokenType::LPAREN) {
+            return None;
+        }
+        self.next_token();
+        let mut parameters= vec![];
+        if !self.parse_function_parameters(&mut parameters){
+            return None;
+        };
+        if !self.current_token_is(TokenType::LBRACE) {
+            return None;
+        }
+        let body = self.parse_block_statement()?;
+        return Some(Expression::FunctionLiteral {
+            token: tok,
+            parameters,
+            body
+        })
+    }
+
+    /// 関数リテラルの引数部分のパーサー。成功時にtrueを返す。
+    fn parse_function_parameters(&mut self, parameters: &mut Vec<Box<Expression>>) -> bool{
+        if self.current_token_is(TokenType::RPAREN) {
+            self.next_token();
+            return true;
+        }
+        loop {
+            let ident_opt = self.parse_identifier();
+            if ident_opt.is_none() {
+                return false;
+            }
+            parameters.push(Box::new(ident_opt.unwrap()));
+            if self.peek_token_is(TokenType::COMMA) {
+                self.next_token();
+                self.next_token();
+                continue;
+            }
+            if self.peek_token_is(TokenType::RPAREN) {
+                self.next_token();
+                self.next_token();
+                return true;
+            }
+            if self.current_token_is(TokenType::EOF) {
+                // 右丸括弧の前に読み込みが最後まで終了することはないので、もし先に終了したら失敗扱い
+                return false;
+            }
+        }
+    }
+
     /// 前置演算子付きの式をパースする関数
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
         // ここに来るということは前置演算子を持つ式だと確定してるはず
@@ -319,7 +373,6 @@ impl Parser {
         return Some(expression);
     }
 
-    // TODO 後でelseにも対応する
     /// if-else文をパースするプログラム
     fn parse_if_expression(&mut self) -> Option<Expression> {
         // ここに入ってきたときにはIFトークンを読み込んでいる状態なので読み進める
@@ -914,6 +967,7 @@ mod test {
             expression,
         } = &program.statements[0]
         {
+            assert_eq!(expression.to_string(), "fn(x, y) { (x + y); }".to_string());
             if let Expression::FunctionLiteral {
                 token,
                 parameters,
@@ -929,7 +983,7 @@ mod test {
                     parameters.get(1).map(|exp| exp.get_token().get_literal()),
                     Some("y".to_string())
                 );
-                assert_eq!(body.to_string(), "{ x + y; }")
+                assert_eq!(body.to_string(), "{ (x + y); }")
             } else {
                 assert!(false, "関数リテラルではありませんでした。");
             }
