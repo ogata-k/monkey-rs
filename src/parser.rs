@@ -332,11 +332,18 @@ impl Parser {
                 return None;
             }
             let consequence = self.parse_block_statement()?;
+            let alt = if self.current_token_is(TokenType::ELSE) {
+                self.next_token();
+                if !self.current_token_is(TokenType::LBRACE) {
+                    return None;
+                }
+                self.parse_block_statement()
+            } else { None };
             return Some(Expression::IfExpression {
                 token: tok,
                 condition: Box::new(condition),
                 consequence: Box::new(consequence),
-                alternative: Box::new(None)
+                alternative: Box::new(alt)
             });
         }
         return None;
@@ -847,7 +854,7 @@ mod test {
                 alternative
             } = &**expression{
                 assert_eq!(condition.to_string(), "(x > y)");
-                assert_eq!(consequence.to_string(), "{x}");
+                assert_eq!(consequence.to_string(), "{ x }");
                 if let Some(alt) = &**alternative {
                     assert_eq!(alt.to_string(), "{ y }")
                 } else {

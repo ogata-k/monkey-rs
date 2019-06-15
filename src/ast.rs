@@ -214,7 +214,7 @@ impl ToString for Expression {
             } => {
                 write!(s, "if {} {}", condition.to_string(), consequence.to_string()).unwrap();
                 if let Some(ref alt) = **alternative {
-                    write!(s, "else {}", alt.to_string()).unwrap();
+                    write!(s, " else {}", alt.to_string()).unwrap();
                 }
             }
         }
