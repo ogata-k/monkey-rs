@@ -977,8 +977,8 @@ mod test {
                 assert_eq!(expression.to_string(), expect.to_string());
                 if let Expression::FunctionLiteral {
                     token,
-                    parameters,
-                    body,
+                    parameters:_,
+                    body:_,
                 } = &**expression
                 {
                     assert!(token.token_type_is(TokenType::FUNCTION));
