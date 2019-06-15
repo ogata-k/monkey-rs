@@ -76,9 +76,9 @@ impl ToString for Statement {
                 token: _,
                 statements,
             } => {
-                write!(s, "{{ ").unwrap();
+                write!(s, "{{").unwrap();
                 for stmt in statements.into_iter() {
-                    write!(s, "{}; ", stmt.to_string()).unwrap();
+                    write!(s, "{}", stmt.to_string()).unwrap();
                 }
                 write!(s, "}}").unwrap();
             }

@@ -301,8 +301,8 @@ impl Parser {
             return None;
         }
         self.next_token();
-        let mut parameters= vec![];
-        if !self.parse_function_parameters(&mut parameters){
+        let mut parameters = vec![];
+        if !self.parse_function_parameters(&mut parameters) {
             return None;
         };
         if !self.current_token_is(TokenType::LBRACE) {
@@ -312,12 +312,12 @@ impl Parser {
         return Some(Expression::FunctionLiteral {
             token: tok,
             parameters,
-            body
-        })
+            body,
+        });
     }
 
     /// 関数リテラルの引数部分のパーサー。成功時にtrueを返す。
-    fn parse_function_parameters(&mut self, parameters: &mut Vec<Box<Expression>>) -> bool{
+    fn parse_function_parameters(&mut self, parameters: &mut Vec<Box<Expression>>) -> bool {
         if self.current_token_is(TokenType::RPAREN) {
             self.next_token();
             return true;
@@ -865,7 +865,7 @@ mod test {
             expression,
         } = &program.statements[0]
         {
-            assert_eq!(expression.to_string(), "if (x > y) { x; }");
+            assert_eq!(expression.to_string(), "if (x > y) {x}");
             if let Expression::IfExpression {
                 token: _,
                 condition,
@@ -874,7 +874,7 @@ mod test {
             } = &**expression
             {
                 assert_eq!(condition.to_string(), "(x > y)");
-                assert_eq!(consequence.to_string(), "{ x; }");
+                assert_eq!(consequence.to_string(), "{x}");
                 assert!(alternative.is_none(), "else節が存在しています。");
             } else {
                 assert!(
@@ -912,7 +912,7 @@ mod test {
             expression,
         } = &program.statements[0]
         {
-            assert_eq!(expression.to_string(), "if (x > y) { x; } else { y; }");
+            assert_eq!(expression.to_string(), "if (x > y) {x} else {y}");
             if let Expression::IfExpression {
                 token: _,
                 condition,
@@ -921,9 +921,9 @@ mod test {
             } = &**expression
             {
                 assert_eq!(condition.to_string(), "(x > y)");
-                assert_eq!(consequence.to_string(), "{ x; }");
+                assert_eq!(consequence.to_string(), "{x}");
                 if let Some(alt) = &**alternative {
-                    assert_eq!(alt.to_string(), "{ y; }")
+                    assert_eq!(alt.to_string(), "{y}")
                 } else {
                     assert!(false, "else節がうまく読み込めません。");
                 }
@@ -941,54 +941,53 @@ mod test {
     /// 関数リテラルのパースをするテスト
     #[test]
     fn test_function_literal() {
-        let input = "fn(x, y){x + y;}";
+        let tests = [
+            // (input, expect)
+            ("fn() {}", "fn() {}"),
+            ("fn(x){}", "fn(x) {}"),
+            ("fn(x, y) {}", "fn(x, y) {}"),
+            ("fn(x, y) {x+y}", "fn(x, y) {(x + y)}"),
+        ];
 
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
-        let program_opt = parser.parse_program();
-        check_parser_errors(&parser);
+        for (input, expect) in tests.into_iter() {
+            let lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
+            let program_opt = parser.parse_program();
+            check_parser_errors(&parser);
 
-        if program_opt.is_none() {
-            assert!(
-                false,
-                "プログラムをパースできませんでした。"
-            );
-        }
-        let program = program_opt.unwrap();
-        if program.statements.len() != 1 {
-            assert!(
-                false,
-                "適切な個数の文をパースすることができませんでした。: {:?}",
-                program.statements
-            );
-        }
-        if let Statement::ExpressionStatement {
-            token: _,
-            expression,
-        } = &program.statements[0]
-        {
-            assert_eq!(expression.to_string(), "fn(x, y) { (x + y); }".to_string());
-            if let Expression::FunctionLiteral {
-                token,
-                parameters,
-                body,
-            } = &**expression
-            {
-                assert!(token.token_type_is(TokenType::FUNCTION));
-                assert_eq!(
-                    parameters.get(0).map(|exp| exp.get_token().get_literal()),
-                    Some("x".to_string())
+            if program_opt.is_none() {
+                assert!(
+                    false,
+                    "プログラムをパースできませんでした。"
                 );
-                assert_eq!(
-                    parameters.get(1).map(|exp| exp.get_token().get_literal()),
-                    Some("y".to_string())
-                );
-                assert_eq!(body.to_string(), "{ (x + y); }")
-            } else {
-                assert!(false, "関数リテラルではありませんでした。");
             }
-        } else {
-            assert!(false, "入力が式文ではありません。");
+            let program = program_opt.unwrap();
+            if program.statements.len() != 1 {
+                assert!(
+                    false,
+                    "適切な個数の文をパースすることができませんでした。: {:?}",
+                    program.statements
+                );
+            }
+            if let Statement::ExpressionStatement {
+                token: _,
+                expression,
+            } = &program.statements[0]
+            {
+                assert_eq!(expression.to_string(), expect.to_string());
+                if let Expression::FunctionLiteral {
+                    token,
+                    parameters,
+                    body,
+                } = &**expression
+                {
+                    assert!(token.token_type_is(TokenType::FUNCTION));
+                } else {
+                    assert!(false, "関数リテラルではありませんでした。");
+                }
+            } else {
+                assert!(false, "入力が式文ではありません。");
+            }
         }
     }
 
