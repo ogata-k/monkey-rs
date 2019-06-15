@@ -38,7 +38,7 @@ pub enum Statement {
     /// 波括弧の中にあるいくつかの式の集まり
     BlockStatement {
         token: Token,
-        statement: Vec<Box<Statement>>
+        statements: Vec<Box<Statement>>
     }
 }
 
@@ -72,10 +72,12 @@ impl ToString for Statement {
             } => {
                 write!(s, "{}", expression.to_string()).unwrap();
             }
-            Statement::BlockStatement { token: _, statement } => {
-                for stmt in statement.into_iter() {
-                    write!(s, "{}", stmt.to_string()).unwrap();
+            Statement::BlockStatement { token: _, statements } => {
+                write!(s, "{{ ").unwrap();
+                for stmt in statements.into_iter() {
+                    write!(s, "{} ", stmt.to_string()).unwrap();
                 }
+                write!(s, "}}").unwrap();
             }
         }
         return s;
@@ -98,7 +100,7 @@ impl Node for Statement {
                 token,
                 expression: _,
             } => token.get_literal(),
-            Statement::BlockStatement { token, statement: _ } => token.get_literal(),
+            Statement::BlockStatement { token, statements: _ } => token.get_literal(),
         }
     }
 
@@ -117,7 +119,7 @@ impl Node for Statement {
                 token,
                 return_value: _,
             } => token,
-            Statement::BlockStatement { token, statement: _ } => token,
+            Statement::BlockStatement { token, statements: _ } => token,
         };
         return tok.clone();
     }
@@ -210,7 +212,7 @@ impl ToString for Expression {
                 consequence,
                 alternative,
             } => {
-                write!(s, "if{} {}", condition.to_string(), consequence.to_string()).unwrap();
+                write!(s, "if {} {}", condition.to_string(), consequence.to_string()).unwrap();
                 if let Some(ref alt) = **alternative {
                     write!(s, "else {}", alt.to_string()).unwrap();
                 }

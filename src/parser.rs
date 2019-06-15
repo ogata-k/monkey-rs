@@ -326,9 +326,9 @@ impl Parser {
         let tok = self.current_token.clone();
         self.next_token();
         let condition = self.parse_expression(Opt::LOWEST)?;
-        if self.peek_token_is(TokenType::RPAREN) {
+        if self.current_token_is(TokenType::RPAREN) {
             self.next_token();
-            if !self.peek_token_is(TokenType::LBRACE) {
+            if !self.current_token_is(TokenType::LBRACE) {
                 return None;
             }
             let consequence = self.parse_block_statement()?;
@@ -344,7 +344,26 @@ impl Parser {
 
     /// 波括弧に囲まれた部分をパースする
     fn parse_block_statement(&mut self) -> Option<Statement> {
-        unimplemented!()
+        // ここに来るときは左波括弧のトークンを読み込んだ時
+        let brace_tok = self.current_token.clone();
+        let mut statements = vec![];
+        self.next_token();
+        loop {
+            if self.current_token_is(TokenType::RBRACE)
+                || self.current_token_is(TokenType::EOF) {
+                break;
+            }
+            let stmt = self.parse_statement()?;
+            statements.push(Box::new(stmt));
+            // セミコロンなので読み飛ばす
+            self.next_token();
+        }
+        self.next_token();
+        let block = Statement::BlockStatement {
+            token: brace_tok,
+            statements
+        };
+        return Some(block);
     }
 
     /// 丸括弧で囲まれたグループの式をパースする
@@ -776,12 +795,12 @@ mod test {
        if program.statements.len() != 1 {
            assert!(
                false,
-               "適切な個数の整数リテラルをパースすることができませんでした。: {:?}",
+               "適切な個数の文をパースすることができませんでした。: {:?}",
                program.statements
            );
        }
        if let Statement::ExpressionStatement { token: _, expression } = &program.statements[0] {
-           assert_eq!(expression.to_string(), "if (x > y) {x}");
+           assert_eq!(expression.to_string(), "if (x > y) { x }");
            if let Expression::IfExpression {
                token: _,
                condition,
@@ -789,7 +808,7 @@ mod test {
                alternative
            } = &**expression {
                assert_eq!(condition.to_string(), "(x > y)");
-               assert_eq!(consequence.to_string(), "{x}");
+               assert_eq!(consequence.to_string(), "{ x }");
                assert!(alternative.is_none(), "else節が存在しています。");
            } else {
                assert!(false, "パース結果がif文ではありませんでした。");
@@ -815,7 +834,7 @@ mod test {
                 if program.statements.len() != 1 {
                 assert!(
                     false,
-                    "適切な個数の整数リテラルをパースすることができませんでした。: {:?}",
+                    "適切な個数の文をパースすることができませんでした。: {:?}",
                     program.statements
                 );
             }
