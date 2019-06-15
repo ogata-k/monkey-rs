@@ -321,7 +321,7 @@ impl Parser {
 
     // TODO 後でelseにも対応する
     /// if-else文をパースするプログラム
-    fn parse_if_expression(&mut self) -> Option<Expression>{
+    fn parse_if_expression(&mut self) -> Option<Expression> {
         // ここに入ってきたときにはIFトークンを読み込んでいる状態なので読み進める
         let tok = self.current_token.clone();
         self.next_token();
@@ -338,12 +338,14 @@ impl Parser {
                     return None;
                 }
                 self.parse_block_statement()
-            } else { None };
+            } else {
+                None
+            };
             return Some(Expression::IfExpression {
                 token: tok,
                 condition: Box::new(condition),
                 consequence: Box::new(consequence),
-                alternative: Box::new(alt)
+                alternative: Box::new(alt),
             });
         }
         return None;
@@ -356,8 +358,7 @@ impl Parser {
         let mut statements = vec![];
         self.next_token();
         loop {
-            if self.current_token_is(TokenType::RBRACE)
-                || self.current_token_is(TokenType::EOF) {
+            if self.current_token_is(TokenType::RBRACE) || self.current_token_is(TokenType::EOF) {
                 break;
             }
             let stmt = self.parse_statement()?;
@@ -368,7 +369,7 @@ impl Parser {
         self.next_token();
         let block = Statement::BlockStatement {
             token: brace_tok,
-            statements
+            statements,
         };
         return Some(block);
     }
@@ -433,7 +434,7 @@ mod test {
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
         )
-            .unwrap();
+        .unwrap();
         for error in errors {
             writeln!(e_writer, "{}", error).unwrap();
         }
@@ -786,49 +787,10 @@ mod test {
         }
     }
 
-   /// if式のifブロックのみをパースするテスト
-    #[test]
-    fn test_if_expression() {
-       let input = "if (x > y){ x }";
-
-       let lexer = Lexer::new(input);
-       let mut parser = Parser::new(lexer);
-       let program_opt = parser.parse_program();
-       check_parser_errors(&parser);
-       if program_opt.is_none() {
-           assert!(false, "プログラムのパースに失敗しました。");
-       }
-       let program = program_opt.unwrap();
-       if program.statements.len() != 1 {
-           assert!(
-               false,
-               "適切な個数の文をパースすることができませんでした。: {:?}",
-               program.statements
-           );
-       }
-       if let Statement::ExpressionStatement { token: _, expression } = &program.statements[0] {
-           assert_eq!(expression.to_string(), "if (x > y) { x }");
-           if let Expression::IfExpression {
-               token: _,
-               condition,
-               consequence,
-               alternative
-           } = &**expression {
-               assert_eq!(condition.to_string(), "(x > y)");
-               assert_eq!(consequence.to_string(), "{ x }");
-               assert!(alternative.is_none(), "else節が存在しています。");
-           } else {
-               assert!(false, "パース結果がif文ではありませんでした。");
-           }
-       } else {
-           assert!(false, "入力が式文ではありません。");
-       }
-   }
-
     /// if式のifブロックのみをパースするテスト
     #[test]
-    fn test_if_else_expression() {
-        let input = "if (x > y){ x }else{y}";
+    fn test_if_expression() {
+        let input = "if (x > y){ x; }";
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -838,35 +800,143 @@ mod test {
             assert!(false, "プログラムのパースに失敗しました。");
         }
         let program = program_opt.unwrap();
-                if program.statements.len() != 1 {
-                assert!(
-                    false,
-                    "適切な個数の文をパースすることができませんでした。: {:?}",
-                    program.statements
-                );
-            }
-        if let Statement::ExpressionStatement {token:_, expression} = &program.statements[0]{
-            assert_eq!(expression.to_string(), "if (x > y) { x } else { y }");
+        if program.statements.len() != 1 {
+            assert!(
+                false,
+                "適切な個数の文をパースすることができませんでした。: {:?}",
+                program.statements
+            );
+        }
+        if let Statement::ExpressionStatement {
+            token: _,
+            expression,
+        } = &program.statements[0]
+        {
+            assert_eq!(expression.to_string(), "if (x > y) { x; }");
             if let Expression::IfExpression {
-                token:_,
+                token: _,
                 condition,
                 consequence,
-                alternative
-            } = &**expression{
+                alternative,
+            } = &**expression
+            {
                 assert_eq!(condition.to_string(), "(x > y)");
-                assert_eq!(consequence.to_string(), "{ x }");
+                assert_eq!(consequence.to_string(), "{ x; }");
+                assert!(alternative.is_none(), "else節が存在しています。");
+            } else {
+                assert!(
+                    false,
+                    "パース結果がif文ではありませんでした。"
+                );
+            }
+        } else {
+            assert!(false, "入力が式文ではありません。");
+        }
+    }
+
+    /// if-else式をパースするテスト
+    #[test]
+    fn test_if_else_expression() {
+        let input = "if (x > y){ x; }else{y;}";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program_opt = parser.parse_program();
+        check_parser_errors(&parser);
+        if program_opt.is_none() {
+            assert!(false, "プログラムのパースに失敗しました。");
+        }
+        let program = program_opt.unwrap();
+        if program.statements.len() != 1 {
+            assert!(
+                false,
+                "適切な個数の文をパースすることができませんでした。: {:?}",
+                program.statements
+            );
+        }
+        if let Statement::ExpressionStatement {
+            token: _,
+            expression,
+        } = &program.statements[0]
+        {
+            assert_eq!(expression.to_string(), "if (x > y) { x; } else { y; }");
+            if let Expression::IfExpression {
+                token: _,
+                condition,
+                consequence,
+                alternative,
+            } = &**expression
+            {
+                assert_eq!(condition.to_string(), "(x > y)");
+                assert_eq!(consequence.to_string(), "{ x; }");
                 if let Some(alt) = &**alternative {
-                    assert_eq!(alt.to_string(), "{ y }")
+                    assert_eq!(alt.to_string(), "{ y; }")
                 } else {
                     assert!(false, "else節がうまく読み込めません。");
                 }
             } else {
-                assert!(false, "パース結果がif文ではありませんでした。");
+                assert!(
+                    false,
+                    "パース結果がif文ではありませんでした。"
+                );
             }
         } else {
-            assert!(false,"入力が式文ではありません。");
+            assert!(false, "入力が式文ではありません。");
         }
-}
+    }
+
+    /// 関数リテラルのパースをするテスト
+    #[test]
+    fn test_function_literal() {
+        let input = "fn(x, y){x + y;}";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program_opt = parser.parse_program();
+        check_parser_errors(&parser);
+
+        if program_opt.is_none() {
+            assert!(
+                false,
+                "プログラムをパースできませんでした。"
+            );
+        }
+        let program = program_opt.unwrap();
+        if program.statements.len() != 1 {
+            assert!(
+                false,
+                "適切な個数の文をパースすることができませんでした。: {:?}",
+                program.statements
+            );
+        }
+        if let Statement::ExpressionStatement {
+            token: _,
+            expression,
+        } = &program.statements[0]
+        {
+            if let Expression::FunctionLiteral {
+                token,
+                parameters,
+                body,
+            } = &**expression
+            {
+                assert!(token.token_type_is(TokenType::FUNCTION));
+                assert_eq!(
+                    parameters.get(0).map(|exp| exp.get_token().get_literal()),
+                    Some("x".to_string())
+                );
+                assert_eq!(
+                    parameters.get(1).map(|exp| exp.get_token().get_literal()),
+                    Some("y".to_string())
+                );
+                assert_eq!(body.to_string(), "{ x + y; }")
+            } else {
+                assert!(false, "関数リテラルではありませんでした。");
+            }
+        } else {
+            assert!(false, "入力が式文ではありません。");
+        }
+    }
 
     /// 括弧と関数を除いて、異なる優先度で式をパースできているかのテスト
     #[test]

@@ -72,10 +72,13 @@ impl ToString for Statement {
             } => {
                 write!(s, "{}", expression.to_string()).unwrap();
             }
-            Statement::BlockStatement { token: _, statements } => {
+            Statement::BlockStatement {
+                token: _,
+                statements,
+            } => {
                 write!(s, "{{ ").unwrap();
                 for stmt in statements.into_iter() {
-                    write!(s, "{} ", stmt.to_string()).unwrap();
+                    write!(s, "{}; ", stmt.to_string()).unwrap();
                 }
                 write!(s, "}}").unwrap();
             }
@@ -100,7 +103,10 @@ impl Node for Statement {
                 token,
                 expression: _,
             } => token.get_literal(),
-            Statement::BlockStatement { token, statements: _ } => token.get_literal(),
+            Statement::BlockStatement {
+                token,
+                statements: _,
+            } => token.get_literal(),
         }
     }
 
@@ -119,7 +125,10 @@ impl Node for Statement {
                 token,
                 return_value: _,
             } => token,
-            Statement::BlockStatement { token, statements: _ } => token,
+            Statement::BlockStatement {
+                token,
+                statements: _,
+            } => token,
         };
         return tok.clone();
     }
@@ -192,11 +201,15 @@ impl ToString for Expression {
             Expression::BooleanLiteral { token: _, value } => {
                 write!(s, "{}", value).unwrap();
             }
-            Expression::FunctionLiteral { token, parameters, body } => {
+            Expression::FunctionLiteral {
+                token,
+                parameters,
+                body,
+            } => {
                 write!(s, "{}(", token.get_literal()).unwrap();
                 for (i, parameter) in parameters.into_iter().enumerate() {
                     if i == 0 {
-                        write!(s, "{}", parameter.to_string());
+                        write!(s, "{}", parameter.to_string()).unwrap();
                     } else {
                         write!(s, ", {}", parameter.to_string()).unwrap();
                     }
@@ -224,7 +237,7 @@ impl ToString for Expression {
                     operator,
                     right_exp.to_string()
                 )
-                    .unwrap();
+                .unwrap();
             }
             Expression::IfExpression {
                 token: _,
@@ -232,7 +245,13 @@ impl ToString for Expression {
                 consequence,
                 alternative,
             } => {
-                write!(s, "if {} {}", condition.to_string(), consequence.to_string()).unwrap();
+                write!(
+                    s,
+                    "if {} {}",
+                    condition.to_string(),
+                    consequence.to_string()
+                )
+                .unwrap();
                 if let Some(ref alt) = **alternative {
                     write!(s, " else {}", alt.to_string()).unwrap();
                 }
@@ -248,7 +267,11 @@ impl Node for Expression {
             Expression::Identifier { token, value: _ } => token.get_literal(),
             Expression::IntegerLiteral { token, value: _ } => token.get_literal(),
             Expression::BooleanLiteral { token, value: _ } => token.get_literal(),
-            Expression::FunctionLiteral { token, parameters: _, body: _ } => token.get_literal(),
+            Expression::FunctionLiteral {
+                token,
+                parameters: _,
+                body: _,
+            } => token.get_literal(),
             Expression::PrefixExpression {
                 token,
                 operator: _,
@@ -274,7 +297,11 @@ impl Node for Expression {
             Expression::Identifier { token, value: _ } => token,
             Expression::IntegerLiteral { token, value: _ } => token,
             Expression::BooleanLiteral { token, value: _ } => token,
-            Expression::FunctionLiteral { token, parameters: _, body: _ } => token,
+            Expression::FunctionLiteral {
+                token,
+                parameters: _,
+                body: _,
+            } => token,
             Expression::PrefixExpression {
                 token,
                 operator: _,
@@ -304,7 +331,11 @@ impl Expression {
             Expression::Identifier { token: _, value } => value.to_string(),
             Expression::IntegerLiteral { token: _, value } => format!("{}", value),
             Expression::BooleanLiteral { token: _, value } => format!("{}", value),
-            Expression::FunctionLiteral { token: _, parameters: _, body: _ } => "".to_string(),
+            Expression::FunctionLiteral {
+                token: _,
+                parameters: _,
+                body: _,
+            } => "".to_string(),
             Expression::PrefixExpression {
                 token: _,
                 operator,
