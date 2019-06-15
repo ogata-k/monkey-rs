@@ -38,8 +38,8 @@ pub enum Statement {
     /// 波括弧の中にあるいくつかの式の集まり
     BlockStatement {
         token: Token,
-        statements: Vec<Box<Statement>>
-    }
+        statements: Vec<Box<Statement>>,
+    },
 }
 
 impl ToString for Statement {
@@ -139,6 +139,14 @@ pub enum Expression {
     IntegerLiteral { token: Token, value: i64 },
     /// 真偽値リテラル用のノード
     BooleanLiteral { token: Token, value: bool },
+    /// 関数リテラル用のノード
+    FunctionLiteral {
+        token: Token,
+        // Expression::Identifierの集まり
+        parameters: Vec<Box<Expression>>,
+        // 関数本体。Statement::BlockStatementのこと
+        body: Statement,
+    },
     /// 前置演算子式用のノード
     PrefixExpression {
         // 判断に使ったトークン
@@ -184,6 +192,18 @@ impl ToString for Expression {
             Expression::BooleanLiteral { token: _, value } => {
                 write!(s, "{}", value).unwrap();
             }
+            Expression::FunctionLiteral { token, parameters, body } => {
+                write!(s, "{}(", token.get_literal()).unwrap();
+                for (i, parameter) in parameters.into_iter().enumerate() {
+                    if i == 0 {
+                        write!(s, "{}", parameter.to_string());
+                    } else {
+                        write!(s, ", {}", parameter.to_string()).unwrap();
+                    }
+                }
+                write!(s, ")").unwrap();
+                write!(s, " {}", body.to_string()).unwrap();
+            }
             Expression::PrefixExpression {
                 token: _,
                 operator,
@@ -204,7 +224,7 @@ impl ToString for Expression {
                     operator,
                     right_exp.to_string()
                 )
-                .unwrap();
+                    .unwrap();
             }
             Expression::IfExpression {
                 token: _,
@@ -228,6 +248,7 @@ impl Node for Expression {
             Expression::Identifier { token, value: _ } => token.get_literal(),
             Expression::IntegerLiteral { token, value: _ } => token.get_literal(),
             Expression::BooleanLiteral { token, value: _ } => token.get_literal(),
+            Expression::FunctionLiteral { token, parameters: _, body: _ } => token.get_literal(),
             Expression::PrefixExpression {
                 token,
                 operator: _,
@@ -253,6 +274,7 @@ impl Node for Expression {
             Expression::Identifier { token, value: _ } => token,
             Expression::IntegerLiteral { token, value: _ } => token,
             Expression::BooleanLiteral { token, value: _ } => token,
+            Expression::FunctionLiteral { token, parameters: _, body: _ } => token,
             Expression::PrefixExpression {
                 token,
                 operator: _,
@@ -282,6 +304,7 @@ impl Expression {
             Expression::Identifier { token: _, value } => value.to_string(),
             Expression::IntegerLiteral { token: _, value } => format!("{}", value),
             Expression::BooleanLiteral { token: _, value } => format!("{}", value),
+            Expression::FunctionLiteral { token: _, parameters: _, body: _ } => "".to_string(),
             Expression::PrefixExpression {
                 token: _,
                 operator,
