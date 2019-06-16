@@ -28,7 +28,7 @@ pub struct Parser {
     // 現在読んでいるトークン
     peek_token: Token,
     // 一つ先のトークン
-    errors: Vec<String>, // パースシテ失敗したときのエラー文の集まり
+    errors: Vec<String>, // パースして失敗したときのエラー文の集まり
 }
 
 impl std::fmt::Debug for Parser {
@@ -257,8 +257,7 @@ impl Parser {
                 break;
             }
             if self.peek_token_is_infix() {
-                self.next_token();
-                if self.current_token_is(TokenType::LPAREN)
+                if self.peek_token_is(TokenType::LPAREN)
                     && (
                     left.get_token().token_type_is(TokenType::FUNCTION)
                         || left.get_token().token_type_is(TokenType::IDENT)
@@ -266,6 +265,7 @@ impl Parser {
                     // 関数呼び出しの時
                     left = self.parse_call_expression(left)?;
                 } else {
+                    self.next_token();
                     left = self.parse_infix_expression(left)?;
                 }
             } else {
@@ -314,9 +314,10 @@ impl Parser {
         if !self.parse_function_parameters(&mut parameters) {
             return None;
         };
-        if !self.current_token_is(TokenType::LBRACE) {
+        if !self.peek_token_is(TokenType::LBRACE) {
             return None;
         }
+        self.next_token();
         let body = self.parse_block_statement()?;
         return Some(Expression::FunctionLiteral {
             token: tok,
@@ -328,7 +329,6 @@ impl Parser {
     /// 関数リテラルの引数部分のパーサー。成功時にtrueを返す。
     fn parse_function_parameters(&mut self, parameters: &mut Vec<Box<Expression>>) -> bool {
         if self.current_token_is(TokenType::RPAREN) {
-            self.next_token();
             return true;
         }
         loop {
@@ -344,10 +344,9 @@ impl Parser {
             }
             if self.peek_token_is(TokenType::RPAREN) {
                 self.next_token();
-                self.next_token();
                 return true;
             }
-            if self.current_token_is(TokenType::EOF) {
+            if self.peek_token_is(TokenType::EOF) {
                 // 右丸括弧の前に読み込みが最後まで終了することはないので、もし先に終了したら失敗扱い
                 return false;
             }
@@ -359,9 +358,14 @@ impl Parser {
         let tok = self.current_token.clone();
         self.next_token();
         let mut arguments = vec![];
+        if !self.current_token_is(TokenType::LPAREN) {
+            return None;
+        }
+        self.next_token();
         if !self.parse_call_arguments(&mut arguments) {
             return None;
         }
+        self.next_token();
         Some(
             Expression::CallExpression {
                 token: tok,
@@ -374,8 +378,7 @@ impl Parser {
     /// 関数呼び出しの引数をパースする関数
     /// 成功ならtrue
     fn parse_call_arguments(&mut self, arguments: &mut Vec<Box<Expression>>) -> bool {
-        if self.peek_token_is(TokenType::RPAREN) {
-            self.next_token();
+        if self.current_token_is(TokenType::RPAREN) {
             return true;
         }
 
@@ -391,11 +394,9 @@ impl Parser {
                 continue;
             }
             if self.peek_token_is(TokenType::RPAREN) {
-                self.next_token();
-                self.next_token();
                 return true;
             }
-            if self.current_token_is(TokenType::EOF) {
+            if self.peek_token_is(TokenType::EOF) {
                 // 右丸括弧の前に読み込みが最後まで終了することはないので、もし先に終了したら失敗扱い
                 return false;
             }
@@ -442,6 +443,7 @@ impl Parser {
                 return None;
             }
             let consequence = self.parse_block_statement()?;
+            self.next_token();
             let alt = if self.current_token_is(TokenType::ELSE) {
                 self.next_token();
                 if !self.current_token_is(TokenType::LBRACE) {
@@ -451,6 +453,9 @@ impl Parser {
             } else {
                 None
             };
+            if alt.is_some() {
+                self.next_token();
+            }
             return Some(Expression::IfExpression {
                 token: tok,
                 condition: Box::new(condition),
@@ -476,7 +481,6 @@ impl Parser {
             // セミコロンなので読み飛ばす
             self.next_token();
         }
-        self.next_token();
         let block = Statement::BlockStatement {
             token: brace_tok,
             statements,
@@ -1051,50 +1055,46 @@ mod test {
     /// 関数呼び出しのパーステスト
     #[test]
     fn test_call_expression() {
-        let input = "add(1, 2 * 3, 4 + 5)";
+        let tests = [
+            // (input, expect)
+            ("add()", "add()"),
+            ("add(1, 2 * 3, 4 + 5)", "add(1, (2 * 3), (4 + 5))"),
+            ("a + add(b*c) + d", "((a + add((b * c))) + d)"),
+            ("add(a, b, 1, 2 * 3, 4+5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
+            ("sub(a + b + c * d / f + g)", "sub((((a + b) + ((c * d) / f)) + g))"),
+            ("fn(a, b) {a + b;}(3, 4)", "fn(a, b) {(a + b)}(3, 4)"),
+        ];
+        for (input, expect) in tests.to_vec().into_iter() {
+            let lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
+            let program_opt = parser.parse_program();
+            check_parser_errors(&parser);
 
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
-        let program_opt = parser.parse_program();
-        check_parser_errors(&parser);
-
-        if program_opt.is_none() {
-            assert!(
-                false,
-                "プログラムをパースできませんでした。"
-            );
-        }
-        let program = program_opt.unwrap();
-        if program.statements.len() != 1 {
-            assert!(
-                false,
-                "適切な個数の文をパースすることができませんでした。: {:?}",
-                program.statements
-            );
-        }
-        if let Statement::ExpressionStatement {
-            token: _,
-            expression,
-        } = &program.statements[0]
-        {
-            assert_eq!(expression.to_string(), "add(1, (2 * 3), (4 + 5))".to_string());
-            if let Expression::CallExpression {
-                token,
-                function,
-                arguments,
-            } = &**expression
-            {
-                assert!(token.token_type_is(TokenType::LPAREN), "トークンが不正です。");
-                assert_eq!(function.to_string(), "add".to_string());
-                assert_eq!(arguments.len(), 3);
-                assert_eq!(arguments[0].to_string(), "1".to_string());
-                assert_eq!(arguments[1].to_string(), "(2 * 3)".to_string());
-                assert_eq!(arguments[2].to_string(), "(4 + 5)".to_string());
-            } else {
-                assert!(false, "関数呼び出しではありませんでした。");
+            if program_opt.is_none() {
+                assert!(
+                    false,
+                    "プログラムをパースできませんでした。"
+                );
             }
-        } else {
-            assert!(false, "入力が式文ではありません。");
+            let program = program_opt.unwrap();
+            println!("program: {}", program.to_string());
+            if program.statements.len() != 1 {
+                assert!(
+                    false,
+                    "適切な個数の文をパースすることができませんでした。: {:?} => {}",
+                    program.statements,
+                    program.to_string()
+                );
+            }
+            if let Statement::ExpressionStatement {
+                token: _,
+                expression,
+            } = &program.statements[0]
+            {
+                assert_eq!(expression.to_string(), expect.to_string());
+            } else {
+                assert!(false, "入力が式文ではありません。");
+            }
         }
     }
 
