@@ -186,6 +186,13 @@ pub enum Expression {
         // Else節。Statement::BlockStatementでStatementの集まりを表す。
         alternative: Box<Option<Statement>>,
     },
+    /// 関数呼び出し式用のノード
+    CallExpression{
+        token: Token,
+        // Expression::Identifier または Expression::FunctionLiteral
+        function: Box<Expression>,
+        arguments: Vec<Box<Expression>>
+    },
 }
 
 impl ToString for Expression {
@@ -256,6 +263,18 @@ impl ToString for Expression {
                     write!(s, " else {}", alt.to_string()).unwrap();
                 }
             }
+            Expression::CallExpression { token: _, function, arguments } => {
+                write!(s, "{}", function.to_string()).unwrap();
+                write!(s, "(").unwrap();
+                for (i, arg) in arguments.into_iter().enumerate(){
+                    if i == 0 {
+                        write!(s, "{}", arg.to_string()).unwrap();
+                    } else {
+                        write!(s, ", {}", arg.to_string()).unwrap();
+                    }
+                }
+                write!(s, ")").unwrap();
+            }
         }
         return s;
     }
@@ -289,6 +308,7 @@ impl Node for Expression {
                 consequence: _,
                 alternative: _,
             } => token.get_literal(),
+            Expression::CallExpression { token, function: _, arguments: _ } => token.get_literal(),
         }
     }
 
@@ -319,6 +339,7 @@ impl Node for Expression {
                 consequence: _,
                 alternative: _,
             } => token,
+            Expression::CallExpression { token, function: _, arguments: _ } => token,
         };
         return tok.clone();
     }
@@ -353,6 +374,7 @@ impl Expression {
                 consequence: _,
                 alternative: _,
             } => "".to_string(),
+            Expression::CallExpression { token: _, function, arguments: _ } => function.to_string(),
         }
     }
 }
