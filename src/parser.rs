@@ -51,6 +51,7 @@ impl Parser {
             TokenType::PLUS | TokenType::MINUS => Opt::SUM,
             TokenType::ASTERISK | TokenType::SLASH => Opt::PRODUCT,
             TokenType::LT | TokenType::GT => Opt::LESSGREATER,
+            TokenType::LPAREN => Opt::CALL,
             _ => Opt::LOWEST,
         }
     }
@@ -252,13 +253,21 @@ impl Parser {
 
         loop {
             // 文末終了で抜けるか次に解析しようとしていた中置演算子の優先順位が今の優先順位より低いときに終了する
-            // 括弧はまだ
             if self.peek_token_is(TokenType::SEMICOLON) || precedence >= self.peek_precedence() {
                 break;
             }
             if self.peek_token_is_infix() {
                 self.next_token();
-                left = self.parse_infix_expression(left)?;
+                if self.current_token_is(TokenType::LPAREN)
+                    && (
+                    left.get_token().token_type_is(TokenType::FUNCTION)
+                        || left.get_token().token_type_is(TokenType::IDENT)
+                ) {
+                    // 関数呼び出しの時
+                    left = self.parse_call_expression(left)?;
+                } else {
+                    left = self.parse_infix_expression(left)?;
+                }
             } else {
                 return Some(left);
             }
@@ -328,6 +337,54 @@ impl Parser {
                 return false;
             }
             parameters.push(Box::new(ident_opt.unwrap()));
+            if self.peek_token_is(TokenType::COMMA) {
+                self.next_token();
+                self.next_token();
+                continue;
+            }
+            if self.peek_token_is(TokenType::RPAREN) {
+                self.next_token();
+                self.next_token();
+                return true;
+            }
+            if self.current_token_is(TokenType::EOF) {
+                // 右丸括弧の前に読み込みが最後まで終了することはないので、もし先に終了したら失敗扱い
+                return false;
+            }
+        }
+    }
+
+    /// 関数呼び出しをパースする関数
+    fn parse_call_expression(&mut self, function: Expression) -> Option<Expression> {
+        let tok = self.current_token.clone();
+        self.next_token();
+        let mut arguments = vec![];
+        if !self.parse_call_arguments(&mut arguments) {
+            return None;
+        }
+        Some(
+            Expression::CallExpression {
+                token: tok,
+                function: Box::new(function),
+                arguments,
+            }
+        )
+    }
+
+    /// 関数呼び出しの引数をパースする関数
+    /// 成功ならtrue
+    fn parse_call_arguments(&mut self, arguments: &mut Vec<Box<Expression>>) -> bool {
+        if self.peek_token_is(TokenType::RPAREN) {
+            self.next_token();
+            return true;
+        }
+
+        loop {
+            let arg_opt = self.parse_expression(Opt::LOWEST);
+            if arg_opt.is_none() {
+                return false;
+            }
+            arguments.push(Box::new(arg_opt.unwrap()));
             if self.peek_token_is(TokenType::COMMA) {
                 self.next_token();
                 self.next_token();
@@ -994,7 +1051,7 @@ mod test {
     /// 関数呼び出しのパーステスト
     #[test]
     fn test_call_expression() {
-        let input = "add(1, 2 * 3, 4 + 5);";
+        let input = "add(1, 2 * 3, 4 + 5)";
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -1020,14 +1077,14 @@ mod test {
             expression,
         } = &program.statements[0]
         {
-            assert_eq!(expression.to_string(), "add(1, (2 * 3), (4 + 5));".to_string());
+            assert_eq!(expression.to_string(), "add(1, (2 * 3), (4 + 5))".to_string());
             if let Expression::CallExpression {
                 token,
                 function,
                 arguments,
             } = &**expression
             {
-                assert!(token.token_type_is(TokenType::LPAREN),"トークンが不正です。");
+                assert!(token.token_type_is(TokenType::LPAREN), "トークンが不正です。");
                 assert_eq!(function.to_string(), "add".to_string());
                 assert_eq!(arguments.len(), 3);
                 assert_eq!(arguments[0].to_string(), "1".to_string());
@@ -1041,60 +1098,60 @@ mod test {
         }
     }
 
-/// 括弧と関数を除いて、異なる優先度で式をパースできているかのテスト
-#[test]
-fn test_operator_precedences() {
-    let tests = [
-        // (input, expect)
-        ("-a * b", "((-a) * b)"),
-        ("!-a", "(!(-a))"),
-        ("a + b + c", "((a + b) + c)"),
-        ("a + b - c", "((a + b) - c)"),
-        ("a * b * c", "((a * b) * c)"),
-        ("a * b / c", "((a * b) / c)"),
-        ("a + b / c", "(a + (b / c))"),
-        ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
-        ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
-        ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
-        ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
-        (
-            "3 + 4 * 5 == 3 * 1 + 4 * 5",
-            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
-        ),
-        ("a + b + -c", "((a + b) + (-c))"),
-        ("true", "true"),
-        ("false", "false"),
-        ("3 > 5 == false", "((3 > 5) == false)"),
-        ("5 < 3 != !!true", "((5 < 3) != (!(!true)))"),
-        ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
-        ("(5+5)*2", "((5 + 5) * 2)"),
-        ("2 / ( 5 - 5)", "(2 / (5 - 5))"),
-        ("-(5 + 5)", "(-(5 + 5))"),
-        ("!(true == true)", "(!(true == true))"),
-    ];
+    /// 括弧と関数を除いて、異なる優先度で式をパースできているかのテスト
+    #[test]
+    fn test_operator_precedences() {
+        let tests = [
+            // (input, expect)
+            ("-a * b", "((-a) * b)"),
+            ("!-a", "(!(-a))"),
+            ("a + b + c", "((a + b) + c)"),
+            ("a + b - c", "((a + b) - c)"),
+            ("a * b * c", "((a * b) * c)"),
+            ("a * b / c", "((a * b) / c)"),
+            ("a + b / c", "(a + (b / c))"),
+            ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
+            ("a + b + -c", "((a + b) + (-c))"),
+            ("true", "true"),
+            ("false", "false"),
+            ("3 > 5 == false", "((3 > 5) == false)"),
+            ("5 < 3 != !!true", "((5 < 3) != (!(!true)))"),
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+            ("(5+5)*2", "((5 + 5) * 2)"),
+            ("2 / ( 5 - 5)", "(2 / (5 - 5))"),
+            ("-(5 + 5)", "(-(5 + 5))"),
+            ("!(true == true)", "(!(true == true))"),
+        ];
 
-    for (input, expect) in tests.iter() {
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
-        let program_opt = parser.parse_program();
-        check_parser_errors(&parser);
-        if program_opt.is_none() {
+        for (input, expect) in tests.iter() {
+            let lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
+            let program_opt = parser.parse_program();
+            check_parser_errors(&parser);
+            if program_opt.is_none() {
+                assert!(
+                    false,
+                    "プログラムをパースすることができませんでした。"
+                );
+            }
+            let program = program_opt.unwrap();
+            let actual = program.to_string();
             assert!(
-                false,
-                "プログラムをパースすることができませんでした。"
+                &actual == *expect,
+                "{} => {:?}\n{} ?= {}",
+                input,
+                program,
+                actual,
+                expect
             );
+            assert_eq!(&actual, *expect);
         }
-        let program = program_opt.unwrap();
-        let actual = program.to_string();
-        assert!(
-            &actual == *expect,
-            "{} => {:?}\n{} ?= {}",
-            input,
-            program,
-            actual,
-            expect
-        );
-        assert_eq!(&actual, *expect);
     }
-}
 }
