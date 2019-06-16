@@ -487,7 +487,7 @@ mod test {
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
         )
-        .unwrap();
+            .unwrap();
         for error in errors {
             writeln!(e_writer, "{}", error).unwrap();
         }
@@ -977,8 +977,8 @@ mod test {
                 assert_eq!(expression.to_string(), expect.to_string());
                 if let Expression::FunctionLiteral {
                     token,
-                    parameters:_,
-                    body:_,
+                    parameters: _,
+                    body: _,
                 } = &**expression
                 {
                     assert!(token.token_type_is(TokenType::FUNCTION));
@@ -991,60 +991,110 @@ mod test {
         }
     }
 
-    /// 括弧と関数を除いて、異なる優先度で式をパースできているかのテスト
+    /// 関数呼び出しのパーステスト
     #[test]
-    fn test_operator_precedences() {
-        let tests = [
-            // (input, expect)
-            ("-a * b", "((-a) * b)"),
-            ("!-a", "(!(-a))"),
-            ("a + b + c", "((a + b) + c)"),
-            ("a + b - c", "((a + b) - c)"),
-            ("a * b * c", "((a * b) * c)"),
-            ("a * b / c", "((a * b) / c)"),
-            ("a + b / c", "(a + (b / c))"),
-            ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
-            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
-            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
-            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
-            (
-                "3 + 4 * 5 == 3 * 1 + 4 * 5",
-                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
-            ),
-            ("a + b + -c", "((a + b) + (-c))"),
-            ("true", "true"),
-            ("false", "false"),
-            ("3 > 5 == false", "((3 > 5) == false)"),
-            ("5 < 3 != !!true", "((5 < 3) != (!(!true)))"),
-            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
-            ("(5+5)*2", "((5 + 5) * 2)"),
-            ("2 / ( 5 - 5)", "(2 / (5 - 5))"),
-            ("-(5 + 5)", "(-(5 + 5))"),
-            ("!(true == true)", "(!(true == true))"),
-        ];
+    fn test_call_expression() {
+        let input = "add(1, 2 * 3, 4 + 5);";
 
-        for (input, expect) in tests.iter() {
-            let lexer = Lexer::new(input);
-            let mut parser = Parser::new(lexer);
-            let program_opt = parser.parse_program();
-            check_parser_errors(&parser);
-            if program_opt.is_none() {
-                assert!(
-                    false,
-                    "プログラムをパースすることができませんでした。"
-                );
-            }
-            let program = program_opt.unwrap();
-            let actual = program.to_string();
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program_opt = parser.parse_program();
+        check_parser_errors(&parser);
+
+        if program_opt.is_none() {
             assert!(
-                &actual == *expect,
-                "{} => {:?}\n{} ?= {}",
-                input,
-                program,
-                actual,
-                expect
+                false,
+                "プログラムをパースできませんでした。"
             );
-            assert_eq!(&actual, *expect);
+        }
+        let program = program_opt.unwrap();
+        if program.statements.len() != 1 {
+            assert!(
+                false,
+                "適切な個数の文をパースすることができませんでした。: {:?}",
+                program.statements
+            );
+        }
+        if let Statement::ExpressionStatement {
+            token: _,
+            expression,
+        } = &program.statements[0]
+        {
+            assert_eq!(expression.to_string(), "add(1, (2 * 3), (4 + 5));".to_string());
+            if let Expression::CallExpression {
+                token,
+                function,
+                arguments,
+            } = &**expression
+            {
+                assert!(token.token_type_is(TokenType::LPAREN),"トークンが不正です。");
+                assert_eq!(function.to_string(), "add".to_string());
+                assert_eq!(arguments.len(), 3);
+                assert_eq!(arguments[0].to_string(), "1".to_string());
+                assert_eq!(arguments[1].to_string(), "(2 * 3)".to_string());
+                assert_eq!(arguments[2].to_string(), "(4 + 5)".to_string());
+            } else {
+                assert!(false, "関数呼び出しではありませんでした。");
+            }
+        } else {
+            assert!(false, "入力が式文ではありません。");
         }
     }
+
+/// 括弧と関数を除いて、異なる優先度で式をパースできているかのテスト
+#[test]
+fn test_operator_precedences() {
+    let tests = [
+        // (input, expect)
+        ("-a * b", "((-a) * b)"),
+        ("!-a", "(!(-a))"),
+        ("a + b + c", "((a + b) + c)"),
+        ("a + b - c", "((a + b) - c)"),
+        ("a * b * c", "((a * b) * c)"),
+        ("a * b / c", "((a * b) / c)"),
+        ("a + b / c", "(a + (b / c))"),
+        ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+        ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+        ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+        ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+        (
+            "3 + 4 * 5 == 3 * 1 + 4 * 5",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        ),
+        ("a + b + -c", "((a + b) + (-c))"),
+        ("true", "true"),
+        ("false", "false"),
+        ("3 > 5 == false", "((3 > 5) == false)"),
+        ("5 < 3 != !!true", "((5 < 3) != (!(!true)))"),
+        ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+        ("(5+5)*2", "((5 + 5) * 2)"),
+        ("2 / ( 5 - 5)", "(2 / (5 - 5))"),
+        ("-(5 + 5)", "(-(5 + 5))"),
+        ("!(true == true)", "(!(true == true))"),
+    ];
+
+    for (input, expect) in tests.iter() {
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program_opt = parser.parse_program();
+        check_parser_errors(&parser);
+        if program_opt.is_none() {
+            assert!(
+                false,
+                "プログラムをパースすることができませんでした。"
+            );
+        }
+        let program = program_opt.unwrap();
+        let actual = program.to_string();
+        assert!(
+            &actual == *expect,
+            "{} => {:?}\n{} ?= {}",
+            input,
+            program,
+            actual,
+            expect
+        );
+        assert_eq!(&actual, *expect);
+    }
+}
 }

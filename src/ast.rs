@@ -188,6 +188,7 @@ pub enum Expression {
     },
     /// 関数呼び出し式用のノード
     CallExpression{
+        // '('トークン
         token: Token,
         // Expression::Identifier または Expression::FunctionLiteral
         function: Box<Expression>,
