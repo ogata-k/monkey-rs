@@ -923,7 +923,7 @@ mod test {
             expression,
         } = &program.statements[0]
         {
-            assert_eq!(expression.to_string(), "if (x > y) {x}");
+            assert_eq!(expression.to_string(), "if (x > y){x}");
             if let Expression::IfExpression {
                 token: _,
                 condition,
@@ -970,7 +970,7 @@ mod test {
             expression,
         } = &program.statements[0]
         {
-            assert_eq!(expression.to_string(), "if (x > y) {x} else {y}");
+            assert_eq!(expression.to_string(), "if (x > y){x} else{y}");
             if let Expression::IfExpression {
                 token: _,
                 condition,
@@ -1001,10 +1001,10 @@ mod test {
     fn test_function_literal() {
         let tests = [
             // (input, expect)
-            ("fn() {}", "fn() {}"),
-            ("fn(x){}", "fn(x) {}"),
-            ("fn(x, y) {}", "fn(x, y) {}"),
-            ("fn(x, y) {x+y}", "fn(x, y) {(x + y)}"),
+            ("fn() {}", "fn(){}"),
+            ("fn(x){}", "fn(x){}"),
+            ("fn(x, y) {}", "fn(x, y){}"),
+            ("fn(x, y) {x+y}", "fn(x, y){(x + y)}"),
         ];
 
         for (input, expect) in tests.into_iter() {
@@ -1065,7 +1065,7 @@ mod test {
                 "sub(a + b + c * d / f + g)",
                 "sub((((a + b) + ((c * d) / f)) + g))",
             ),
-            ("fn(a, b) {a + b;}(3, 4)", "fn(a, b) {(a + b)}(3, 4)"),
+            ("fn(a, b) {a + b;}(3, 4)", "fn(a, b){(a + b)}(3, 4)"),
         ];
         for (input, expect) in tests.to_vec().into_iter() {
             let lexer = Lexer::new(input);
@@ -1080,7 +1080,6 @@ mod test {
                 );
             }
             let program = program_opt.unwrap();
-            println!("program: {}", program.to_string());
             if program.statements.len() != 1 {
                 assert!(
                     false,
