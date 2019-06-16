@@ -258,10 +258,9 @@ impl Parser {
             }
             if self.peek_token_is_infix() {
                 if self.peek_token_is(TokenType::LPAREN)
-                    && (
-                    left.get_token().token_type_is(TokenType::FUNCTION)
-                        || left.get_token().token_type_is(TokenType::IDENT)
-                ) {
+                    && (left.get_token().token_type_is(TokenType::FUNCTION)
+                        || left.get_token().token_type_is(TokenType::IDENT))
+                {
                     // 関数呼び出しの時
                     left = self.parse_call_expression(left)?;
                 } else {
@@ -366,13 +365,11 @@ impl Parser {
             return None;
         }
         self.next_token();
-        Some(
-            Expression::CallExpression {
-                token: tok,
-                function: Box::new(function),
-                arguments,
-            }
-        )
+        Some(Expression::CallExpression {
+            token: tok,
+            function: Box::new(function),
+            arguments,
+        })
     }
 
     /// 関数呼び出しの引数をパースする関数
@@ -548,7 +545,7 @@ mod test {
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
         )
-            .unwrap();
+        .unwrap();
         for error in errors {
             writeln!(e_writer, "{}", error).unwrap();
         }
@@ -1060,8 +1057,14 @@ mod test {
             ("add()", "add()"),
             ("add(1, 2 * 3, 4 + 5)", "add(1, (2 * 3), (4 + 5))"),
             ("a + add(b*c) + d", "((a + add((b * c))) + d)"),
-            ("add(a, b, 1, 2 * 3, 4+5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
-            ("sub(a + b + c * d / f + g)", "sub((((a + b) + ((c * d) / f)) + g))"),
+            (
+                "add(a, b, 1, 2 * 3, 4+5, add(6, 7 * 8))",
+                "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+            ),
+            (
+                "sub(a + b + c * d / f + g)",
+                "sub((((a + b) + ((c * d) / f)) + g))",
+            ),
             ("fn(a, b) {a + b;}(3, 4)", "fn(a, b) {(a + b)}(3, 4)"),
         ];
         for (input, expect) in tests.to_vec().into_iter() {
