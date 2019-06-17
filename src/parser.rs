@@ -168,29 +168,29 @@ impl Parser {
         if !self.expect_peek(TokenType::IDENT) {
             return None;
         }
-        let ident = Expression::Identifier {
-            token: Token::new(TokenType::IDENT, &self.current_token.get_literal()),
-            value: self.current_token.get_literal(),
-        };
-
-        // TODO expression_stubをのちにパースされた式で置き換える
-        let expression_stub = Expression::Identifier {
-            token: Token::new(TokenType::IDENT, &self.current_token.get_literal()),
-            value: self.current_token.get_literal(),
-        };
+        // let
+        let let_ident = self.parse_identifier()?;
+        let ident = self.parse_identifier()?;
         if !self.expect_peek(TokenType::ASSIGN) {
             return None;
         }
 
-        // TODO セミコロンに遭遇するまで式を読み飛ばしてしまってる
-        while !self.current_token_is(TokenType::SEMICOLON) {
+        self.next_token();
+
+        let value = self.parse_expression(Opt::LOWEST)?;
+
+        println!("current: {:?}\npeek: {:?}", self.current_token, self.peek_token);
+        if self.current_token_is(TokenType::SEMICOLON) {
             self.next_token();
+        } else {
+            return None;
         }
         let let_statement = Statement::LetStatement {
-            token: Token::new(TokenType::LET, "let"),
+            token: let_ident.get_token(),
             name: Box::new(ident),
-            value: Box::new(expression_stub),
+            value: Box::new(value),
         };
+        println!("let stmt: {:?}", let_statement);
         return Some(let_statement);
     }
 
@@ -244,7 +244,7 @@ impl Parser {
             TokenType::IF => self.parse_if_expression(),
             TokenType::FUNCTION => self.parse_function_literal(),
             TokenType::IDENT => self.parse_identifier(),
-            TokenType::INT => self.parse_integer_literal(),
+            TokenType::INT => {self.parse_integer_literal()},
             TokenType::TRUE | TokenType::FALSE => self.parse_boolean_literal(),
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
             TokenType::LPAREN => self.parse_grouped_expression(),
@@ -259,7 +259,7 @@ impl Parser {
             if self.peek_token_is_infix() {
                 if self.peek_token_is(TokenType::LPAREN)
                     && (left.get_token().token_type_is(TokenType::FUNCTION)
-                        || left.get_token().token_type_is(TokenType::IDENT))
+                    || left.get_token().token_type_is(TokenType::IDENT))
                 {
                     // 関数呼び出しの時
                     left = self.parse_call_expression(left)?;
@@ -545,7 +545,7 @@ mod test {
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
         )
-        .unwrap();
+            .unwrap();
         for error in errors {
             writeln!(e_writer, "{}", error).unwrap();
         }
@@ -619,6 +619,7 @@ mod test {
         }
         let program = program_opt.unwrap();
         let statements = &program.statements;
+        println!("program_str: {}\nprogram: {:?}", program.to_string(), program);
         if statements.len() != 3 {
             assert!(false, "let文の個数が不適切です。");
         }
