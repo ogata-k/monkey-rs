@@ -87,17 +87,6 @@ impl Parser {
         self.peek_token = self.lexer.next_token();
     }
 
-    /// 次の型を読んで予期している型かどうかを判定する関数
-    fn expect_peek(&mut self, token_type: TokenType) -> bool {
-        if self.peek_token_is(token_type.clone()) {
-            self.next_token();
-            return true;
-        } else {
-            self.make_peek_error(token_type);
-            return false;
-        }
-    }
-
     /// 次に読み込む演算子が中置演算子のトークンか調べる関数
     fn peek_token_is_infix(&self) -> bool {
         // 中置演算子の優先順位表をもちいて最低順位以外に変換できれば中置演算子ではない
@@ -115,11 +104,14 @@ impl Parser {
     }
 
     // パース処理
+    // パース処理の基本はcurrentから解析を初めて、解析し終わったもので終わる
+    // loopで一つ分になっているのでloopで次に来たら現在位置を更新
     /// 字句解析器の結果を元にMonkeyプログラムを表す解釈木を生成する関数
     pub fn parse_program(&mut self) -> Option<Program> {
         let mut program = Program::new();
 
         loop {
+            // 終了処理
             // 正常終了
             if self.current_token.token_type_is(TokenType::EOF) {
                 break;
@@ -131,8 +123,8 @@ impl Parser {
                 break;
             }
 
+            // パース処理
             let stmt_opt = self.parse_statement();
-
             // 異常終了(後日式にも対応したら変更する必要がある)
             if stmt_opt.is_none() {
                 self.make_statement_parse_error();
@@ -163,41 +155,44 @@ impl Parser {
     /// let文をパースするためのパーサー
     fn parse_let_statement(&mut self) -> Option<Statement> {
         if !self.current_token_is(TokenType::LET) {
+            self.make_current_expect_error(TokenType::LET);
             return None;
         }
-        if !self.expect_peek(TokenType::IDENT) {
+        if !self.peek_token_is(TokenType::IDENT) {
+            self.make_peek_expect_error(TokenType::IDENT);
             return None;
         }
         // let
         let let_ident = self.parse_identifier()?;
+        self.next_token();
         let ident = self.parse_identifier()?;
-        if !self.expect_peek(TokenType::ASSIGN) {
+        if !self.peek_token_is(TokenType::ASSIGN) {
+            self.make_peek_expect_error(TokenType::ASSIGN);
             return None;
         }
 
         self.next_token();
+        self.next_token();
 
         let value = self.parse_expression(Opt::LOWEST)?;
 
-        println!("current: {:?}\npeek: {:?}", self.current_token, self.peek_token);
-        if self.current_token_is(TokenType::SEMICOLON) {
-            self.next_token();
-        } else {
+        if !self.peek_token_is(TokenType::SEMICOLON) {
+            self.make_peek_expect_error(TokenType::SEMICOLON);
             return None;
         }
+        self.next_token();
         let let_statement = Statement::LetStatement {
             token: let_ident.get_token(),
             name: Box::new(ident),
             value: Box::new(value),
         };
-        println!("let stmt: {:?}", let_statement);
         return Some(let_statement);
     }
 
     /// return文をパースするためパーサー
     fn parse_return_statement(&mut self) -> Option<Statement> {
         if !self.current_token_is(TokenType::RETURN) {
-            self.make_peek_error(TokenType::RETURN);
+            self.make_peek_expect_error(TokenType::RETURN);
             return None;
         }
         self.next_token();
@@ -498,28 +493,44 @@ impl Parser {
     }
 
     // エラー関係の関数群
+    /// 現在のトークン情報を返す文字列
+    fn get_tokens_str(&self) -> String{
+        return format!("\n\tcurrent: {:?}\n\tpeek: {:?}", self.current_token, self.peek_token);
+    }
     /// パースエラーを返す関数
     pub fn get_errors(&self) -> Vec<String> {
         return self.errors.clone();
     }
     ///  異常なトークンを検出した場合のエラー
     fn make_illegal_error(&mut self) {
-        let msg = "異常なトークンを検出しました。".to_string();
+        let msg = format!("異常なトークンを検出しました。{}", self.get_tokens_str());
         self.errors.push(msg);
     }
 
     /// 文のパースに失敗した場合のエラー
     fn make_statement_parse_error(&mut self) {
-        let msg = "文をパースできませんでした。".to_string();
+        let msg = format!("文をパースできませんでした。{}", self.get_tokens_str());
         self.errors.push(msg);
     }
 
     /// 先読み時に発生したエラー用をフォーマットを使って生成して追加する。
-    fn make_peek_error(&mut self, expect_type: TokenType) {
+    fn make_current_expect_error(&mut self, expect_type: TokenType) {
         let msg = format!(
-            "トークン型{:?}を期待して読み込みましたが、実際に読み込んだトークン型は{:?}でした。",
+            "トークン型{:?}を期待して読みましたが、実際に読み込んだトークン型は{:?}でした。{}",
             expect_type,
-            self.current_token.get_token_type()
+            self.current_token.get_token_type(),
+            self.get_tokens_str()
+        );
+        self.errors.push(msg);
+    }
+
+    /// 先読み時に発生したエラー用をフォーマットを使って生成して追加する。
+    fn make_peek_expect_error(&mut self, expect_type: TokenType) {
+        let msg = format!(
+            "トークン型{:?}を期待して先のトークンを読みましたが、実際に読み込んだトークン型は{:?}でした。{}",
+            expect_type,
+            self.peek_token.get_token_type(),
+            self.get_tokens_str()
         );
         self.errors.push(msg);
     }
@@ -619,7 +630,6 @@ mod test {
         }
         let program = program_opt.unwrap();
         let statements = &program.statements;
-        println!("program_str: {}\nprogram: {:?}", program.to_string(), program);
         if statements.len() != 3 {
             assert!(false, "let文の個数が不適切です。");
         }
