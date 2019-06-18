@@ -103,7 +103,7 @@ impl Parser {
         Parser::precedences(&self.peek_token.get_token_type())
     }
 
-    // パース処理
+    // パース処理 TODO ?で抜けている個所でちゃんとエラーを埋め込むように改良する
     // パース処理の基本はcurrentから解析を初めて、解析し終わったもので終わる
     // loopで一つ分になっているのでloopで次に来たら現在位置を更新
     /// 字句解析器の結果を元にMonkeyプログラムを表す解釈木を生成する関数
@@ -199,27 +199,25 @@ impl Parser {
     /// return文をパースするためパーサー
     fn parse_return_statement(&mut self) -> Option<Statement> {
         if !self.current_token_is(TokenType::RETURN) {
-            self.make_peek_expect_error(TokenType::RETURN);
+            self.make_current_expect_error(TokenType::RETURN);
             return None;
         }
+
+        // return
+        let return_ident = self.parse_identifier()?;
         self.next_token();
 
-        // TODO セミコロンに遭遇するまで式を読み飛ばしてしまっている。
-        while !self.current_token_is(TokenType::SEMICOLON) {
+        let expression = self.parse_expression(Opt::LOWEST)?;
+        if self.peek_token_is(TokenType::SEMICOLON) {
+            // return式のパース成功
             self.next_token();
+            return Some(Statement::ReturnStatement {
+                token: return_ident.get_token(),
+                return_value: Box::new(expression),
+            });
         }
-
-        // TODO expressionをパースできるようになったらパースしたものと置き換える
-        let expression_stub = Expression::Identifier {
-            token: Token::new(TokenType::IDENT, ""),
-            value: "".to_string(),
-        };
-
-        let return_stmt = Statement::ReturnStatement {
-            token: Token::new(TokenType::RETURN, "return"),
-            return_value: Box::new(expression_stub),
-        };
-        return Some(return_stmt);
+        self.make_peek_expect_error(TokenType::SEMICOLON);
+        return None;
     }
 
     /// 式文をパースするためのパーサー
