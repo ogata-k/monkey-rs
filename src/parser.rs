@@ -130,7 +130,7 @@ impl Parser {
                 self.make_parse_statement_error();
                 while !self.current_token_is(TokenType::SEMICOLON) {
                     self.next_token();
-                    if self.current_token_is(TokenType::EOF) || self.current_token_is(TokenType::ILLEGAL){
+                    if self.current_token_is(TokenType::EOF) || self.current_token_is(TokenType::ILLEGAL) {
                         self.make_illegal_error();
                         return None;
                     }
@@ -182,7 +182,7 @@ impl Parser {
             }
         }?;
         self.next_token();
-        let ident = match self.parse_identifier(){
+        let ident = match self.parse_identifier() {
             Some(i) => Some(i),
             None => {
                 self.make_parse_identifier_error();
@@ -197,7 +197,7 @@ impl Parser {
         self.next_token();
         self.next_token();
 
-        let value = match self.parse_expression(Opt::LOWEST){
+        let value = match self.parse_expression(Opt::LOWEST) {
             Some(e) => Some(e),
             None => {
                 self.make_parse_expression_error();
@@ -226,16 +226,17 @@ impl Parser {
         }
 
         // return
-        let return_ident =match self.parse_identifier(){
+        let return_ident = match self.parse_identifier() {
             Some(i) => Some(i),
             None => {
                 self.make_parse_identifier_error();
                 None
             }
-        }?;;
+        }?;
+        ;
         self.next_token();
 
-        let expression = match self.parse_expression(Opt::LOWEST){
+        let expression = match self.parse_expression(Opt::LOWEST) {
             Some(e) => Some(e),
             None => {
                 self.make_parse_expression_error();
@@ -281,14 +282,14 @@ impl Parser {
             TokenType::IF => self.parse_if_expression(),
             TokenType::FUNCTION => self.parse_function_literal(),
             TokenType::IDENT => self.parse_identifier(),
-            TokenType::INT => {self.parse_integer_literal()},
+            TokenType::INT => { self.parse_integer_literal() }
             TokenType::TRUE | TokenType::FALSE => self.parse_boolean_literal(),
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
             TokenType::LPAREN => self.parse_grouped_expression(),
             _ => {
                 self.make_unknown_token_error();
                 None
-            },
+            }
         }?;
 
         loop {
@@ -542,7 +543,7 @@ impl Parser {
 
     // エラー関係の関数群
     /// 現在のトークン情報を返す文字列
-    fn get_tokens_str(&self) -> String{
+    fn get_tokens_str(&self) -> String {
         return format!("\n\tcurrent: {:?}\n\tpeek: {:?}", self.current_token, self.peek_token);
     }
     /// パースエラーを返す関数
@@ -645,12 +646,12 @@ mod test {
         check_parser_errors(&parser);
 
         if program_opt.is_none() {
-            assert!(false, "return文のパースに失敗しました。");
+            assert!(false, "return文のパースに失敗しました。{}", input);
         }
         let program = program_opt.unwrap();
         let statements = &program.statements;
         if statements.len() != 3 {
-            assert!(false, "return文の個数が不適切です。");
+            assert!(false, "return文の個数が不適切です。{:?}", statements);
         }
 
         for stmt in program.statements {
@@ -671,7 +672,7 @@ mod test {
                 // assert_eq!(return_value.get_value(), "");
             }
             _ => {
-                assert!(false, "return文ではありません。");
+                assert!(false, "return文ではありません。{:?}", stmt);
             }
         }
     }
@@ -692,12 +693,12 @@ mod test {
         check_parser_errors(&parser);
 
         if program_opt.is_none() {
-            assert!(false, "let文のパースに失敗しました。");
+            assert!(false, "let文のパースに失敗しました。{}", input);
         }
         let program = program_opt.unwrap();
         let statements = &program.statements;
         if statements.len() != 3 {
-            assert!(false, "let文の個数が不適切です。");
+            assert!(false, "let文の個数が不適切です。{:?}", statements);
         }
 
         let tests = ["x", "y", "foobar"];
@@ -732,7 +733,7 @@ mod test {
     /// 識別子をパースするテスト
     #[test]
     fn test_identifier_expression() {
-        let input = "foobar";
+        let input = "foobar;";
         test_identifier(input, "foobar")
     }
 
@@ -743,14 +744,15 @@ mod test {
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
         if program_opt.is_none() {
-            assert!(false, "プログラムのパースに失敗しました。");
+            assert!(false, "プログラムのパースに失敗しました。{}", input);
         }
         let program = program_opt.unwrap();
 
         if program.statements.len() != 1 {
             assert!(
                 false,
-                "適切な個数の識別子をパースすることができませんでした。"
+                "適切な個数の識別子をパースすることができませんでした。{:?}",
+                program.statements
             );
         }
 
@@ -781,7 +783,7 @@ mod test {
                 }
             }
         } else {
-            assert!(false, "入力が式文ではありません");
+            assert!(false, "入力が式文ではありません{}", input);
         }
     }
 
@@ -795,14 +797,15 @@ mod test {
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
         if program_opt.is_none() {
-            assert!(false, "プログラムのパースに失敗しました。");
+            assert!(false, "プログラムのパースに失敗しました。{}", input);
         }
         let program = program_opt.unwrap();
 
         if program.statements.len() != 1 {
             assert!(
                 false,
-                "適切な個数の整数リテラルをパースすることができませんでした。"
+                "適切な個数の整数リテラルをパースすることができませんでした。{:?}",
+                program.statements
             );
         }
 
@@ -817,14 +820,14 @@ mod test {
                 assert_eq!(value, 5_i64);
             }
         } else {
-            assert!(false, "入力が式文ではありません");
+            assert!(false, "入力が式文ではありません{}", input);
         }
     }
 
     ///  整数リテラルをパースするテスト
     #[test]
     fn test_boolean_literal_expression() {
-        let tests = [("false", false), ("true", true)];
+        let tests = [("false;", false), ("true;", true)];
 
         for (input, res) in tests.to_vec().into_iter() {
             let lexer = Lexer::new(input);
@@ -832,14 +835,15 @@ mod test {
             let program_opt = parser.parse_program();
             check_parser_errors(&parser);
             if program_opt.is_none() {
-                assert!(false, "プログラムのパースに失敗しました。");
+                assert!(false, "プログラムのパースに失敗しました。{}", input);
             }
             let program = program_opt.unwrap();
 
             if program.statements.len() != 1 {
                 assert!(
                     false,
-                    "適切な個数のリテラルをパースすることができませんでした。"
+                    "適切な個数のリテラルをパースすることができませんでした。{:?}",
+                    program.statements
                 );
             }
 
@@ -854,7 +858,7 @@ mod test {
                     assert_eq!(value, res);
                 }
             } else {
-                assert!(false, "入力が式文ではありません");
+                assert!(false, "入力が式文ではありません。{}", input);
             }
         }
     }
@@ -865,7 +869,7 @@ mod test {
         let prefix_tests = vec![
             // (input, operator_lit, int_val)
             ("!5;", "!", 5_i64),
-            ("-15", "-", 15_i64),
+            ("-15;", "-", 15_i64),
         ];
 
         for (input, prefix, v) in prefix_tests {
@@ -874,14 +878,15 @@ mod test {
             let program_opt = parser.parse_program();
             check_parser_errors(&parser);
             if program_opt.is_none() {
-                assert!(false, "プログラムのパースに失敗しました。");
+                assert!(false, "プログラムのパースに失敗しました。{}", input);
             }
             let program = program_opt.unwrap();
 
             if program.statements.len() != 1 {
                 assert!(
                     false,
-                    "適切な個数の整数リテラルをパースすることができませんでした。"
+                    "適切な個数の整数リテラルをパースすることができませんでした。{:?}",
+                    program.statements
                 );
             }
 
@@ -902,7 +907,7 @@ mod test {
                     test_integer_literal(v, &**exp);
                 }
             } else {
-                assert!(false, "入力が式文ではありません");
+                assert!(false, "入力が式文ではありません.{}", input);
             }
         }
     }
@@ -914,7 +919,7 @@ mod test {
             assert_eq!(token.get_literal(), format!("{}", v));
             assert_eq!(*value, v);
         } else {
-            assert!(false, "整数リテラルではありませんでした。")
+            assert!(false, "整数リテラルではありませんでした。{}", exp.get_token().get_literal())
         }
     }
 
@@ -939,7 +944,7 @@ mod test {
             let program_opt = parser.parse_program();
             check_parser_errors(&parser);
             if program_opt.is_none() {
-                assert!(false, "プログラムのパースに失敗しました。");
+                assert!(false, "プログラムのパースに失敗しました。{}", input);
             }
             let program = program_opt.unwrap();
 
@@ -970,7 +975,7 @@ mod test {
                     test_integer_literal(right_value, &**right_exp);
                 }
             } else {
-                assert!(false, "入力が式文ではありません");
+                assert!(false, "入力が式文ではありません。{}", );
             }
         }
     }
@@ -985,7 +990,7 @@ mod test {
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
         if program_opt.is_none() {
-            assert!(false, "プログラムのパースに失敗しました。");
+            assert!(false, "プログラムのパースに失敗しました。{}", input);
         }
         let program = program_opt.unwrap();
         if program.statements.len() != 1 {
@@ -1000,7 +1005,7 @@ mod test {
             expression,
         } = &program.statements[0]
         {
-            assert_eq!(expression.to_string(), "if (x > y){x}");
+            assert_eq!(expression.to_string(), "if (x > y){x;}");
             if let Expression::IfExpression {
                 token: _,
                 condition,
@@ -1009,16 +1014,17 @@ mod test {
             } = &**expression
             {
                 assert_eq!(condition.to_string(), "(x > y)");
-                assert_eq!(consequence.to_string(), "{x}");
+                assert_eq!(consequence.to_string(), "{x;}");
                 assert!(alternative.is_none(), "else節が存在しています。");
             } else {
                 assert!(
                     false,
-                    "パース結果がif文ではありませんでした。"
+                    "パース結果がif文ではありませんでした。{}",
+                    expression.get_token().get_literal()
                 );
             }
         } else {
-            assert!(false, "入力が式文ではありません。");
+            assert!(false, "入力が式文ではありません。{}", program.statements[0].get_token().get_literal());
         }
     }
 
@@ -1032,7 +1038,7 @@ mod test {
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
         if program_opt.is_none() {
-            assert!(false, "プログラムのパースに失敗しました。");
+            assert!(false, "プログラムのパースに失敗しました。{}", input);
         }
         let program = program_opt.unwrap();
         if program.statements.len() != 1 {
@@ -1065,11 +1071,12 @@ mod test {
             } else {
                 assert!(
                     false,
-                    "パース結果がif文ではありませんでした。"
+                    "パース結果がif文ではありませんでした。{}",
+                    expression.get_token().get_literal()
                 );
             }
         } else {
-            assert!(false, "入力が式文ではありません。");
+            assert!(false, "入力が式文ではありません。{}", program.statements[0].get_token().get_literal());
         }
     }
 
@@ -1093,7 +1100,8 @@ mod test {
             if program_opt.is_none() {
                 assert!(
                     false,
-                    "プログラムをパースできませんでした。"
+                    "プログラムをパースできませんでした。{}",
+                    input
                 );
             }
             let program = program_opt.unwrap();
@@ -1118,10 +1126,10 @@ mod test {
                 {
                     assert!(token.token_type_is(TokenType::FUNCTION));
                 } else {
-                    assert!(false, "関数リテラルではありませんでした。");
+                    assert!(false, "関数リテラルではありませんでした。{}", expression.get_token().get_literal());
                 }
             } else {
-                assert!(false, "入力が式文ではありません。");
+                assert!(false, "入力が式文ではありません。{}", input);
             }
         }
     }
@@ -1131,18 +1139,18 @@ mod test {
     fn test_call_expression() {
         let tests = [
             // (input, expect)
-            ("add()", "add()"),
-            ("add(1, 2 * 3, 4 + 5)", "add(1, (2 * 3), (4 + 5))"),
-            ("a + add(b*c) + d", "((a + add((b * c))) + d)"),
+            ("add();", "add();"),
+            ("add(1, 2 * 3, 4 + 5);", "add(1, (2 * 3), (4 + 5));"),
+            ("a + add(b*c) + d;", "((a + add((b * c))) + d);"),
             (
-                "add(a, b, 1, 2 * 3, 4+5, add(6, 7 * 8))",
-                "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+                "add(a, b, 1, 2 * 3, 4+5, add(6, 7 * 8));",
+                "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)));",
             ),
             (
-                "sub(a + b + c * d / f + g)",
-                "sub((((a + b) + ((c * d) / f)) + g))",
+                "sub(a + b + c * d / f + g);",
+                "sub((((a + b) + ((c * d) / f)) + g));",
             ),
-            ("fn(a, b) {a + b;}(3, 4)", "fn(a, b){(a + b);}(3, 4)"),
+            ("fn(a, b) {a + b;}(3, 4);", "fn(a, b){(a + b);}(3, 4);"),
         ];
         for (input, expect) in tests.to_vec().into_iter() {
             let lexer = Lexer::new(input);
@@ -1153,7 +1161,8 @@ mod test {
             if program_opt.is_none() {
                 assert!(
                     false,
-                    "プログラムをパースできませんでした。"
+                    "プログラムをパースできませんでした。{}",
+                    input
                 );
             }
             let program = program_opt.unwrap();
@@ -1172,7 +1181,7 @@ mod test {
             {
                 assert_eq!(expression.to_string(), expect.to_string());
             } else {
-                assert!(false, "入力が式文ではありません。");
+                assert!(false, "入力が式文ではありません。{}", input);
             }
         }
     }
