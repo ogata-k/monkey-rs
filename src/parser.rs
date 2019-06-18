@@ -130,6 +130,10 @@ impl Parser {
                 self.make_parse_statement_error();
                 while !self.current_token_is(TokenType::SEMICOLON) {
                     self.next_token();
+                    if self.current_token_is(TokenType::EOF) || self.current_token_is(TokenType::ILLEGAL){
+                        self.make_illegal_error();
+                        return None;
+                    }
                 }
                 self.next_token();
                 continue;
@@ -253,19 +257,22 @@ impl Parser {
     /// 式文をパースするためのパーサー
     fn parse_expression_statement(&mut self) -> Option<Statement> {
         let c_tok = self.current_token.clone();
-        let expression_opt = self.parse_expression(Opt::LOWEST);
-        if expression_opt.is_none() {
+        let expression = match self.parse_expression(Opt::LOWEST) {
+            Some(e) => Some(e),
+            None => {
+                self.make_parse_expression_error();
+                None
+            }
+        }?;
+        if !self.peek_token_is(TokenType::SEMICOLON) {
+            self.make_peek_expect_error(TokenType::SEMICOLON);
             return None;
         }
-        let expression = expression_opt.unwrap();
-        if self.peek_token_is(TokenType::SEMICOLON) {
-            self.next_token();
-        }
-        let stmt = Statement::ExpressionStatement {
+        self.next_token();
+        return Some(Statement::ExpressionStatement {
             token: c_tok,
             expression: Box::new(expression),
-        };
-        return Some(stmt);
+        });
     }
 
     /// 式をパースする関数
@@ -550,12 +557,14 @@ impl Parser {
 
     /// 式のパースに失敗した場合のエラー
     fn make_parse_expression_error(&mut self) {
-        unimplemented!()
+        let msg = format!("式をパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
     }
 
     /// 識別子のパースに失敗した場合のエラー
     fn make_parse_identifier_error(&mut self) {
-        unimplemented!()
+        let msg = format!("識別子リテラルをパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
     }
 
     /// 先読み時に発生したエラー用をフォーマットを使って生成して追加する。
@@ -767,7 +776,7 @@ mod test {
     ///  整数リテラルをパースするテスト
     #[test]
     fn test_integer_literal_expression() {
-        let input = "5";
+        let input = "5;";
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -1060,7 +1069,7 @@ mod test {
             ("fn() {}", "fn(){}"),
             ("fn(x){}", "fn(x){}"),
             ("fn(x, y) {}", "fn(x, y){}"),
-            ("fn(x, y) {x+y}", "fn(x, y){(x + y)}"),
+            ("fn(x, y) {x+y}", "fn(x, y){(x + y);}"),
         ];
 
         for (input, expect) in tests.into_iter() {
@@ -1121,7 +1130,7 @@ mod test {
                 "sub(a + b + c * d / f + g)",
                 "sub((((a + b) + ((c * d) / f)) + g))",
             ),
-            ("fn(a, b) {a + b;}(3, 4)", "fn(a, b){(a + b)}(3, 4)"),
+            ("fn(a, b) {a + b;}(3, 4)", "fn(a, b){(a + b);}(3, 4)"),
         ];
         for (input, expect) in tests.to_vec().into_iter() {
             let lexer = Lexer::new(input);

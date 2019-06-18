@@ -70,7 +70,7 @@ impl ToString for Statement {
                 token: _,
                 expression,
             } => {
-                write!(s, "{}", expression.to_string()).unwrap();
+                write!(s, "{};", expression.to_string()).unwrap();
             }
             Statement::BlockStatement {
                 token: _,
