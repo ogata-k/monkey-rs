@@ -128,11 +128,18 @@ impl Parser {
             // 異常終了(後日式にも対応したら変更する必要がある)
             if stmt_opt.is_none() {
                 self.make_statement_parse_error();
-                break;
+                while !self.current_token_is(TokenType::SEMICOLON) {
+                    self.next_token();
+                }
+                self.next_token();
+                continue;
             }
             let stmt = stmt_opt.unwrap();
             program.statements.push(stmt);
             self.next_token();
+        }
+        if self.errors.len() != 0 {
+            return None;
         }
         return Some(program);
     }
