@@ -285,19 +285,25 @@ impl Parser {
             TokenType::TRUE | TokenType::FALSE => self.parse_boolean_literal(),
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
             TokenType::LPAREN => self.parse_grouped_expression(),
-            _ => None,
+            _ => {
+                self.make_unknown_token_error();
+                None
+            },
         }?;
 
         loop {
             // 文末終了で抜けるか次に解析しようとしていた中置演算子の優先順位が今の優先順位より低いときに終了する
             if self.peek_token_is(TokenType::SEMICOLON) || precedence >= self.peek_precedence() {
+                // セミコロンは式でないのでセミコロンの一つ前まで読み込んで終了
                 break;
             }
+
             if self.peek_token_is_infix() {
                 if self.peek_token_is(TokenType::LPAREN)
                     && (left.get_token().token_type_is(TokenType::FUNCTION)
                     || left.get_token().token_type_is(TokenType::IDENT))
                 {
+                    self.next_token();
                     // 関数呼び出しの時
                     left = self.parse_call_expression(left)?;
                 } else {
@@ -564,6 +570,12 @@ impl Parser {
     /// 識別子のパースに失敗した場合のエラー
     fn make_parse_identifier_error(&mut self) {
         let msg = format!("識別子リテラルをパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
+    }
+
+    /// 分岐の時に予期せぬトークンを取得したときのエラー
+    fn make_unknown_token_error(&mut self) {
+        let msg = format!("予期せぬトークンを読み込みました。読み取ったトークンが不正です。{}", self.get_tokens_str());
         self.errors.push(msg);
     }
 
