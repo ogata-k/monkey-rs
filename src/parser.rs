@@ -127,7 +127,7 @@ impl Parser {
             let stmt_opt = self.parse_statement();
             // 異常終了(後日式にも対応したら変更する必要がある)
             if stmt_opt.is_none() {
-                self.make_statement_parse_error();
+                self.make_parse_statement_error();
                 while !self.current_token_is(TokenType::SEMICOLON) {
                     self.next_token();
                 }
@@ -170,9 +170,21 @@ impl Parser {
             return None;
         }
         // let
-        let let_ident = self.parse_identifier()?;
+        let let_ident = match self.parse_identifier() {
+            Some(i) => Some(i),
+            None => {
+                self.make_parse_identifier_error();
+                None
+            }
+        }?;
         self.next_token();
-        let ident = self.parse_identifier()?;
+        let ident = match self.parse_identifier(){
+            Some(i) => Some(i),
+            None => {
+                self.make_parse_identifier_error();
+                None
+            }
+        }?;
         if !self.peek_token_is(TokenType::ASSIGN) {
             self.make_peek_expect_error(TokenType::ASSIGN);
             return None;
@@ -181,7 +193,13 @@ impl Parser {
         self.next_token();
         self.next_token();
 
-        let value = self.parse_expression(Opt::LOWEST)?;
+        let value = match self.parse_expression(Opt::LOWEST){
+            Some(e) => Some(e),
+            None => {
+                self.make_parse_expression_error();
+                None
+            }
+        }?;
 
         if !self.peek_token_is(TokenType::SEMICOLON) {
             self.make_peek_expect_error(TokenType::SEMICOLON);
@@ -204,10 +222,22 @@ impl Parser {
         }
 
         // return
-        let return_ident = self.parse_identifier()?;
+        let return_ident =match self.parse_identifier(){
+            Some(i) => Some(i),
+            None => {
+                self.make_parse_identifier_error();
+                None
+            }
+        }?;;
         self.next_token();
 
-        let expression = self.parse_expression(Opt::LOWEST)?;
+        let expression = match self.parse_expression(Opt::LOWEST){
+            Some(e) => Some(e),
+            None => {
+                self.make_parse_expression_error();
+                None
+            }
+        }?;
         if self.peek_token_is(TokenType::SEMICOLON) {
             // return式のパース成功
             self.next_token();
@@ -513,9 +543,19 @@ impl Parser {
     }
 
     /// 文のパースに失敗した場合のエラー
-    fn make_statement_parse_error(&mut self) {
+    fn make_parse_statement_error(&mut self) {
         let msg = format!("文をパースできませんでした。{}", self.get_tokens_str());
         self.errors.push(msg);
+    }
+
+    /// 式のパースに失敗した場合のエラー
+    fn make_parse_expression_error(&mut self) {
+        unimplemented!()
+    }
+
+    /// 識別子のパースに失敗した場合のエラー
+    fn make_parse_identifier_error(&mut self) {
+        unimplemented!()
     }
 
     /// 先読み時に発生したエラー用をフォーマットを使って生成して追加する。
