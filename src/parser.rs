@@ -548,29 +548,46 @@ impl Parser {
 
     /// 波括弧に囲まれた部分をパースする
     fn parse_block_statement(&mut self) -> Option<Statement> {
-        // TODO
         // ここに来るときは左波括弧のトークンを読み込んだ時
         if !self.current_token_is(TokenType::LBRACE) {
             self.make_current_expect_error(TokenType::LBRACE);
             return None;
         }
         let brace_tok = self.current_token.clone();
-        let mut statements = vec![];
         self.next_token();
-        loop {
-            if self.current_token_is(TokenType::RBRACE) || self.current_token_is(TokenType::EOF) {
-                break;
-            }
-            let stmt = self.parse_statement()?;
-            statements.push(Box::new(stmt));
-            // セミコロンなので読み飛ばす
-            self.next_token();
-        }
-        let block = Statement::BlockStatement {
+        let mut statements = vec![];
+        if self.current_token_is(TokenType::RBRACE){
+            return Some(Statement::BlockStatement {
             token: brace_tok,
             statements,
-        };
-        return Some(block);
+        });
+        }
+        loop {
+            let stmt = match self.parse_statement(){
+                Some(s) => Some(s),
+                None => {
+                    self.make_parse_statement_error();
+                    None
+                }
+            }?;
+            statements.push(Box::new(stmt));
+            if self.peek_token_is(TokenType::RBRACE){
+                self.next_token();
+                break;
+            }
+
+            if self.peek_token_is(TokenType::SEMICOLON) {
+                self.next_token();
+                self.next_token();
+                continue;
+            }
+            self.make_parse_block_statement_error();
+            return None;
+        }
+        return Some(Statement::BlockStatement {
+            token: brace_tok,
+            statements,
+        });
     }
 
     /// 丸括弧で囲まれたグループの式をパースする
@@ -1163,10 +1180,10 @@ mod test {
     fn test_function_literal() {
         let tests = [
             // (input, expect)
-            ("fn() {}", "fn(){}"),
-            ("fn(x){}", "fn(x){}"),
-            ("fn(x, y) {}", "fn(x, y){}"),
-            ("fn(x, y) {x+y}", "fn(x, y){(x + y);}"),
+            ("fn() {};", "fn(){};"),
+            ("fn(x){};", "fn(x){};"),
+            ("fn(x, y) {};", "fn(x, y){};"),
+            ("fn(x, y) {x+y;};", "fn(x, y){(x + y);};"),
         ];
 
         for (input, expect) in tests.into_iter() {
@@ -1195,7 +1212,7 @@ mod test {
                 expression,
             } = &program.statements[0]
             {
-                assert_eq!(expression.to_string(), expect.to_string());
+                assert_eq!(program.to_string(), expect.to_string());
                 if let Expression::FunctionLiteral {
                     token,
                     parameters: _,
