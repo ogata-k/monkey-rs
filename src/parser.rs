@@ -758,9 +758,9 @@ mod test {
     use crate::parser::*;
     use crate::token::*;
 
+    // TODO パーサーがプログラムをパースしたときにエラーになる場合を変更してこの関数をProgram構造体にはやす
     /// パースエラーがあれば出力する関数
     fn check_parser_errors(parser: &Parser) {
-        use std::io::Write;
         let errors = parser.get_errors();
         if errors.len() == 0 {
             return;
