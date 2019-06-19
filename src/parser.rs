@@ -575,11 +575,14 @@ impl Parser {
 
     /// 丸括弧で囲まれたグループの式をパースする
     fn parse_grouped_expression(&mut self) -> Option<Expression> {
-        // TODO
-        // ここに来るときは左丸括弧を読み込んだ時なのでひとつ消費して次から調べる
+        if !self.current_token_is(TokenType::LPAREN){
+            self.make_current_expect_error(TokenType::LPAREN);
+            return None;
+        }
         self.next_token();
         let exp = self.parse_expression(Opt::LOWEST);
         if !self.peek_token_is(TokenType::RPAREN) {
+            self.make_peek_expect_error(TokenType::RPAREN);
             return None;
         }
         self.next_token();
