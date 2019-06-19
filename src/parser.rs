@@ -553,30 +553,44 @@ impl Parser {
 
     /// if-else文をパースするプログラム
     fn parse_if_expression(&mut self) -> Option<Expression> {
-        // TODO
+        // TODO なんか式のパーサーの終わる位置が一つ分先に進んでいる
+        if !self.current_token_is(TokenType::IF) {
+            self.make_current_expect_error(TokenType::IF);
+            return None;
+        }
         // ここに入ってきたときにはIFトークンを読み込んでいる状態なので読み進める
         let tok = self.current_token.clone();
         self.next_token();
-        let condition = self.parse_expression(Opt::LOWEST)?;
-        if self.current_token_is(TokenType::RPAREN) {
+        let condition = match self.parse_expression(Opt::LOWEST){
+            Some(e) => Some(e),
+            None => {
+                self.make_parse_expression_error();
+                None
+            }
+        }?;
+        eprintln!("{:?} {}", condition, self.get_tokens_str());
+        if !self.peek_token_is(TokenType::RPAREN) {
+            self.make_peek_expect_error(TokenType::RPAREN);
+            return None;
+        } else {
             self.next_token();
-            if !self.current_token_is(TokenType::LBRACE) {
+            if !self.peek_token_is(TokenType::LBRACE) {
+                self.make_peek_expect_error(TokenType::LBRACE);
                 return None;
             }
-            let consequence = self.parse_block_statement()?;
             self.next_token();
-            let alt = if self.current_token_is(TokenType::ELSE) {
+            let consequence = self.parse_block_statement()?;
+            let alt = if !self.peek_token_is(TokenType::ELSE) {
+                None
+            } else {
                 self.next_token();
-                if !self.current_token_is(TokenType::LBRACE) {
+                if !self.peek_token_is(TokenType::LBRACE) {
+                    self.make_peek_expect_error(TokenType::ELSE);
                     return None;
                 }
-                self.parse_block_statement()
-            } else {
-                None
-            };
-            if alt.is_some() {
                 self.next_token();
-            }
+                self.parse_block_statement()
+            };
             return Some(Expression::IfExpression {
                 token: tok,
                 condition: Box::new(condition),
@@ -584,7 +598,6 @@ impl Parser {
                 alternative: Box::new(alt),
             });
         }
-        return None;
     }
 
     /// 波括弧に囲まれた部分をパースする
