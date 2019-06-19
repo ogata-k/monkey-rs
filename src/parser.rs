@@ -295,7 +295,7 @@ impl Parser {
         loop {
             // 文末終了で抜けるか次に解析しようとしていた中置演算子の優先順位が今の優先順位より低いときに終了する
             if self.peek_token_is(TokenType::SEMICOLON) || precedence >= self.peek_precedence() {
-                // セミコロンは式でないのでセミコロンの一つ前まで読み込んで終了
+                // セミコロンは式ではなく式文の領域なのでセミコロンの一つ前まで読み込んで終了
                 break;
             }
 
@@ -319,7 +319,11 @@ impl Parser {
     }
 
     /// 認識句用の式をパースする関数
-    fn parse_identifier(&self) -> Option<Expression> {
+    fn parse_identifier(&mut self) -> Option<Expression> {
+        if self.current_token_is(TokenType::EOF) || self.current_token_is(TokenType::ILLEGAL){
+            self.make_parse_identifier_error();
+            return None;
+        }
         return Some(Expression::Identifier {
             token: self.current_token.clone(),
             value: self.current_token.get_literal(),
@@ -327,17 +331,29 @@ impl Parser {
     }
 
     /// 整数リテラルのパーサー
-    fn parse_integer_literal(&self) -> Option<Expression> {
-        let lit = self.current_token.get_literal().parse::<i64>().ok()?;
+    fn parse_integer_literal(&mut self) -> Option<Expression> {
+        let lit = match self.current_token.get_literal().parse::<i64>().ok(){
+            Some(i) => Some(i),
+            None => {
+                self.make_parse_integer_literal_error();
+                None
+            }
+        }?;
         return Some(Expression::IntegerLiteral {
             token: self.current_token.clone(),
             value: lit,
         });
     }
 
-    /// 整数リテラルのパーサー
-    fn parse_boolean_literal(&self) -> Option<Expression> {
-        let lit = self.current_token.get_literal().parse::<bool>().ok()?;
+    /// 真理値リテラルのパーサー
+    fn parse_boolean_literal(&mut self) -> Option<Expression> {
+        let lit = match self.current_token.get_literal().parse::<bool>().ok(){
+            Some(b) => Some(b),
+            None => {
+                self.make_parse_boolean_literal_error();
+                None
+            }
+        }?;
         return Some(Expression::BooleanLiteral {
             token: self.current_token.clone(),
             value: lit,
@@ -574,6 +590,18 @@ impl Parser {
         self.errors.push(msg);
     }
 
+    /// 整数リテラルのパースに失敗した場合のエラー
+    fn make_parse_integer_literal_error(&mut self){
+        let msg = format!("整数をパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
+    }
+
+    /// 真理値リテラルのパースに失敗した場合のエラー
+    fn make_parse_boolean_literal_error(&mut self){
+        let msg = format!("真理値をパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
+    }
+
     /// 分岐の時に予期せぬトークンを取得したときのエラー
     fn make_unknown_token_error(&mut self) {
         let msg = format!("予期せぬトークンを読み込みました。読み取ったトークンが不正です。{}", self.get_tokens_str());
@@ -617,17 +645,14 @@ mod test {
         if errors.len() == 0 {
             return;
         }
-        let mut e_writer = std::io::stderr();
-        writeln!(
-            e_writer,
+        eprintln!(
             "\n\nパースエラーが{}件発生しました。",
             errors.len()
-        )
-            .unwrap();
+        );
         for error in errors {
-            writeln!(e_writer, "{}", error).unwrap();
+            eprintln!("{}", error);
         }
-        writeln!(e_writer, "").unwrap();
+        eprintln!();
     }
 
     /// return 文の構文解析用のテスト
