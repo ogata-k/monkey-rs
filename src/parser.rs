@@ -421,26 +421,24 @@ impl Parser {
                 self.next_token();
                 return true;
             }
-            if self.peek_token_is(TokenType::EOF) {
-                // 右丸括弧の前に読み込みが最後まで終了することはないので、もし先に終了したら失敗扱い
+                // 来てほしいトークンのホワイトリストを抜けたのでエラー扱い
                 return false;
-            }
         }
     }
 
     /// 関数呼び出しをパースする関数
     fn parse_call_expression(&mut self, function: Expression) -> Option<Expression> {
+        if !self.current_token_is(TokenType::LPAREN) {
+            self.make_current_expect_error(TokenType::LPAREN);
+            return None;
+        }
         let tok = self.current_token.clone();
         self.next_token();
         let mut arguments = vec![];
-        if !self.current_token_is(TokenType::LPAREN) {
-            return None;
-        }
-        self.next_token();
         if !self.parse_call_arguments(&mut arguments) {
+            self.make_parse_call_arguments_error();
             return None;
         }
-        self.next_token();
         Some(Expression::CallExpression {
             token: tok,
             function: Box::new(function),
@@ -456,7 +454,13 @@ impl Parser {
         }
 
         loop {
-            let arg_opt = self.parse_expression(Opt::LOWEST);
+            let arg_opt = match self.parse_expression(Opt::LOWEST) {
+                Some(e) => Some(e),
+                None => {
+                    self.make_parse_expression_error();
+                    None
+                }
+            };
             if arg_opt.is_none() {
                 return false;
             }
@@ -466,13 +470,13 @@ impl Parser {
                 self.next_token();
                 continue;
             }
+
             if self.peek_token_is(TokenType::RPAREN) {
+                self.next_token();
                 return true;
             }
-            if self.peek_token_is(TokenType::EOF) {
-                // 右丸括弧の前に読み込みが最後まで終了することはないので、もし先に終了したら失敗扱い
+            // 正常終了のホワイトリストを抜けたのでエラー
                 return false;
-            }
         }
     }
 
@@ -633,6 +637,13 @@ impl Parser {
         let msg = format!("ブロックをパースできませんでした。{}", self.get_tokens_str());
         self.errors.push(msg);
     }
+
+    /// 関数を呼び出すときの引数のパースエラー
+    fn make_parse_call_arguments_error(&mut self) {
+        let msg = format!("引数をパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
+    }
+
     /// 分岐の時に予期せぬトークンを取得したときのエラー
     fn make_unknown_token_error(&mut self) {
         let msg = format!("予期せぬトークンを読み込みました。読み取ったトークンが不正です。{}", self.get_tokens_str());
@@ -662,6 +673,7 @@ impl Parser {
     }
 }
 
+// TODO テストで文字を比較する部分をプログラムを起点にして比較するように書き換える
 #[cfg(test)]
 mod test {
     use crate::ast::*;
@@ -1235,7 +1247,7 @@ mod test {
                 expression,
             } = &program.statements[0]
             {
-                assert_eq!(expression.to_string(), expect.to_string());
+                assert_eq!(program.to_string(), expect.to_string());
             } else {
                 assert!(false, "入力が式文ではありません。{}", input);
             }
