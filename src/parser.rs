@@ -363,21 +363,37 @@ impl Parser {
     /// 関数リテラルのパーサー
     fn parse_function_literal(&mut self) -> Option<Expression> {
         // ここに来るときはFUNCTIONトークン型を読み込んでいる
+        if !self.current_token_is(TokenType::FUNCTION) {
+            self.make_current_expect_error(TokenType::FUNCTION);
+            return None;
+        }
         let tok = self.current_token.clone();
-        self.next_token();
-        if !self.current_token_is(TokenType::LPAREN) {
+        if !self.peek_token_is(TokenType::LPAREN) {
+            self.make_peek_expect_error(TokenType::LPAREN);
             return None;
         }
         self.next_token();
+
         let mut parameters = vec![];
+        // パラメーター用に開始位置を調整
+        self.next_token();
         if !self.parse_function_parameters(&mut parameters) {
+            self.make_parse_parameters_error();
             return None;
         };
         if !self.peek_token_is(TokenType::LBRACE) {
+            self.make_peek_expect_error(TokenType::LBRACE);
             return None;
         }
+        // ブロック文のために開始位置を調節
         self.next_token();
-        let body = self.parse_block_statement()?;
+        let body = match self.parse_block_statement(){
+            Some(b) => Some(b),
+            None => {
+                self.make_parse_block_statement_error();
+                None
+            }
+        }?;
         return Some(Expression::FunctionLiteral {
             token: tok,
             parameters,
@@ -526,6 +542,10 @@ impl Parser {
     /// 波括弧に囲まれた部分をパースする
     fn parse_block_statement(&mut self) -> Option<Statement> {
         // ここに来るときは左波括弧のトークンを読み込んだ時
+        if !self.current_token_is(TokenType::LBRACE) {
+            self.make_current_expect_error(TokenType::LBRACE);
+            return None;
+        }
         let brace_tok = self.current_token.clone();
         let mut statements = vec![];
         self.next_token();
@@ -602,6 +622,17 @@ impl Parser {
         self.errors.push(msg);
     }
 
+    /// 関数パラメーター用のパースエラー
+    fn make_parse_parameters_error(&mut self){
+        let msg = format!("関数の引数をパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
+    }
+
+    /// ブロック文のパースに失敗した場合のエラー
+    fn make_parse_block_statement_error(&mut self) {
+        let msg = format!("ブロックをパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
+    }
     /// 分岐の時に予期せぬトークンを取得したときのエラー
     fn make_unknown_token_error(&mut self) {
         let msg = format!("予期せぬトークンを読み込みました。読み取ったトークンが不正です。{}", self.get_tokens_str());
