@@ -673,7 +673,6 @@ impl Parser {
     }
 }
 
-// TODO テストで文字を比較する部分をプログラムを起点にして比較するように書き換える
 #[cfg(test)]
 mod test {
     use crate::ast::*;
@@ -702,9 +701,9 @@ mod test {
     #[test]
     fn test_return_statements() {
         let input = "
-            return 5;
-            return 10;
-            return 993322;
+            return 1;
+            return x + y;
+            return z;
         ";
 
         let lexer = Lexer::new(input);
@@ -722,22 +721,22 @@ mod test {
             assert!(false, "return文の個数が不適切です。{:?}", statements);
         }
 
-        for stmt in program.statements {
-            test_return_statement(&stmt);
+        let tests = ["1", "(x + y)", "z"];
+        for (i, test) in tests.iter().enumerate() {
+            test_return_statement(&program.statements[i], test);
         }
     }
 
     // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
-    fn test_return_statement(stmt: &Statement) {
+    fn test_return_statement(stmt: &Statement, expect: &str) {
         match stmt {
             Statement::ReturnStatement {
                 token,
-                return_value: _,
+                return_value,
             } => {
                 // トークンのreturnで始まってるか確認
                 assert_eq!(token.get_literal(), "return");
-                // TODO 戻り値の確認
-                // assert_eq!(return_value.get_value(), "");
+                assert_eq!(return_value.get_value(), expect.to_string());
             }
             _ => {
                 assert!(false, "return文ではありません。{:?}", stmt);
@@ -750,8 +749,8 @@ mod test {
     fn test_let_statements() {
         let input = "
             let x = 5;
-            let y = 10;
-            let foobar = 838383;
+            let y = a+b;
+            let foobar = c;
         ";
 
         let lexer = Lexer::new(input);
@@ -769,28 +768,27 @@ mod test {
             assert!(false, "let文の個数が不適切です。{:?}", statements);
         }
 
-        let tests = ["x", "y", "foobar"];
+        let tests = [("x", "5"), ("y", "(a + b)"), ("foobar", "c")];
 
         for (i, test) in tests.iter().enumerate() {
             let stmt = &statements[i];
-            test_let_statement(stmt, test);
+            test_let_statement(stmt, test.0, test.1);
         }
     }
 
     // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
-    fn test_let_statement(stmt: &Statement, test: &str) {
+    fn test_let_statement(stmt: &Statement,  name_expect: &str, value_expect: &str) {
         match stmt {
             Statement::LetStatement {
                 token,
                 name,
-                value: _,
+                value,
             } => {
                 // トークンのletで始まってるか確認
                 assert_eq!(token.get_literal(), "let");
                 // 束縛変数名の確認
-                assert_eq!(name.get_value(), test);
-                // TODO 束縛された値の確認
-                // assert_eq!(value.get_value(), "");
+                assert_eq!(name.get_value(), name_expect);
+                assert_eq!(value.get_value(), value_expect);
             }
             _ => {
                 assert!(false, "let文ではありません。");
@@ -825,6 +823,7 @@ mod test {
         }
 
         let stmt = &program.statements[0];
+        assert_eq!(stmt.to_string(), format!("{};", res));
         if let Statement::ExpressionStatement {
             token: _,
             expression,
@@ -842,7 +841,7 @@ mod test {
                         res
                     );
                 }
-                if value != "foobar" {
+                if value != res {
                     assert!(
                         false,
                         "トークンのリテラルが\"{}\"でありませんでした。",
@@ -878,6 +877,7 @@ mod test {
         }
 
         let stmt = &program.statements[0];
+        assert_eq!(stmt.to_string(), input);
         if let Statement::ExpressionStatement {
             token: _,
             expression,
@@ -916,6 +916,7 @@ mod test {
             }
 
             let stmt = &program.statements[0];
+            assert_eq!(stmt.to_string(), input);
             if let Statement::ExpressionStatement {
                 token: _,
                 expression,
@@ -935,12 +936,12 @@ mod test {
     #[test]
     fn test_prefix_expressions() {
         let prefix_tests = vec![
-            // (input, operator_lit, int_val)
-            ("!5;", "!", 5_i64),
-            ("-15;", "-", 15_i64),
+            // (input, operator_lit, int_val, expect)
+            ("!5;", "!", 5_i64, "(!5);"),
+            ("-15;", "-", 15_i64, "(-15);"),
         ];
 
-        for (input, prefix, v) in prefix_tests {
+        for (input, prefix, v, expect) in prefix_tests {
             let lexer = Lexer::new(input);
             let mut parser = Parser::new(lexer);
             let program_opt = parser.parse_program();
@@ -959,6 +960,7 @@ mod test {
             }
 
             let stmt = &program.statements[0];
+            assert_eq!(stmt.to_string(), expect);
             if let Statement::ExpressionStatement {
                 token: _,
                 expression,
@@ -1121,7 +1123,7 @@ mod test {
             expression,
         } = &program.statements[0]
         {
-            assert_eq!(expression.to_string(), "if (x > y){x} else{y}");
+            assert_eq!(expression.to_string(), "if (x > y){x;} else{y;}");
             if let Expression::IfExpression {
                 token: _,
                 condition,
@@ -1130,9 +1132,9 @@ mod test {
             } = &**expression
             {
                 assert_eq!(condition.to_string(), "(x > y)");
-                assert_eq!(consequence.to_string(), "{x}");
+                assert_eq!(consequence.to_string(), "{x;}");
                 if let Some(alt) = &**alternative {
-                    assert_eq!(alt.to_string(), "{y}")
+                    assert_eq!(alt.to_string(), "{y;}")
                 } else {
                     assert!(false, "else節がうまく読み込めません。");
                 }
@@ -1259,31 +1261,31 @@ mod test {
     fn test_operator_precedences() {
         let tests = [
             // (input, expect)
-            ("-a * b", "((-a) * b)"),
-            ("!-a", "(!(-a))"),
-            ("a + b + c", "((a + b) + c)"),
-            ("a + b - c", "((a + b) - c)"),
-            ("a * b * c", "((a * b) * c)"),
-            ("a * b / c", "((a * b) / c)"),
-            ("a + b / c", "(a + (b / c))"),
-            ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
-            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
-            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
-            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+            ("-a * b;", "((-a) * b);"),
+            ("!-a;", "(!(-a));"),
+            ("a + b + c;", "((a + b) + c);"),
+            ("a + b - c;", "((a + b) - c);"),
+            ("a * b * c;", "((a * b) * c);"),
+            ("a * b / c;", "((a * b) / c);"),
+            ("a + b / c;", "(a + (b / c));"),
+            ("a + b * c + d / e - f;", "(((a + (b * c)) + (d / e)) - f);"),
+            ("3 + 4; -5 * 5;", "(3 + 4);((-5) * 5);"),
+            ("5 > 4 == 3 < 4;", "((5 > 4) == (3 < 4));"),
+            ("5 < 4 != 3 > 4;", "((5 < 4) != (3 > 4));"),
             (
-                "3 + 4 * 5 == 3 * 1 + 4 * 5",
-                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+                "3 + 4 * 5 == 3 * 1 + 4 * 5;",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));",
             ),
-            ("a + b + -c", "((a + b) + (-c))"),
-            ("true", "true"),
-            ("false", "false"),
-            ("3 > 5 == false", "((3 > 5) == false)"),
-            ("5 < 3 != !!true", "((5 < 3) != (!(!true)))"),
-            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
-            ("(5+5)*2", "((5 + 5) * 2)"),
-            ("2 / ( 5 - 5)", "(2 / (5 - 5))"),
-            ("-(5 + 5)", "(-(5 + 5))"),
-            ("!(true == true)", "(!(true == true))"),
+            ("a + b + -c;", "((a + b) + (-c));"),
+            ("true;", "true;"),
+            ("false;", "false;"),
+            ("3 > 5 == false;", "((3 > 5) == false);"),
+            ("5 < 3 != !!true;", "((5 < 3) != (!(!true)));"),
+            ("1 + (2 + 3) + 4;", "((1 + (2 + 3)) + 4);"),
+            ("(5+5)*2;", "((5 + 5) * 2);"),
+            ("2 / ( 5 - 5);", "(2 / (5 - 5));"),
+            ("-(5 + 5);", "(-(5 + 5));"),
+            ("!(true == true);", "(!(true == true));"),
         ];
 
         for (input, expect) in tests.iter() {
