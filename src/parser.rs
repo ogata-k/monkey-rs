@@ -45,7 +45,7 @@ impl std::fmt::Debug for Parser {
 
 impl Parser {
     /// 中置演算子の優先順位を返す関数
-    fn precedences(token_type: &TokenType) -> Opt {
+    fn infix_precedence(token_type: &TokenType) -> Opt {
         match token_type {
             TokenType::EQ | TokenType::NEQ => Opt::EQUALS,
             TokenType::PLUS | TokenType::MINUS => Opt::SUM,
@@ -56,6 +56,13 @@ impl Parser {
         }
     }
 
+    /// 前置演算子の優先順位を返す関数
+    fn prefix_precedence(token_type: &TokenType) -> Opt {
+        match token_type {
+            TokenType::PLUS | TokenType::MINUS | TokenType::BANG => Opt::PREFIX,
+            _ => Opt::LOWEST,
+        }
+    }
     // 基本的な関数群
     /// 初期化関数
     pub fn new(mut lexer: Lexer) -> Self {
@@ -87,22 +94,37 @@ impl Parser {
         self.peek_token = self.lexer.next_token();
     }
 
+   /// 次に読み込む演算子が前置演算子のトークンか調べる関数
+    fn peek_token_is_prefix(&self) -> bool {
+        // 中置演算子の優先順位表をもちいて最低順位以外に変換できれば中置演算子ではない
+        self.peek_prefix_precedence() == Opt::PREFIX
+    }
+
     /// 次に読み込む演算子が中置演算子のトークンか調べる関数
     fn peek_token_is_infix(&self) -> bool {
         // 中置演算子の優先順位表をもちいて最低順位以外に変換できれば中置演算子ではない
-        self.peek_precedence() != Opt::LOWEST
+        self.peek_infix_precedence() != Opt::LOWEST
     }
 
     /// 現在読み込んでいるトークンの優先順位を取得する関数
-    fn current_precedence(&self) -> Opt {
-        Parser::precedences(&self.current_token.get_token_type())
+    fn current_infix_precedence(&self) -> Opt {
+        Parser::infix_precedence(&self.current_token.get_token_type())
     }
 
     /// 次に読み込むトークンの優先順位を取得する関数
-    fn peek_precedence(&self) -> Opt {
-        Parser::precedences(&self.peek_token.get_token_type())
+    fn peek_infix_precedence(&self) -> Opt {
+        Parser::infix_precedence(&self.peek_token.get_token_type())
     }
 
+    /// 現在読み込んでいるトークンの優先順位を取得する関数
+    fn current_prefix_precedence(&self) -> Opt {
+        Parser::prefix_precedence(&self.current_token.get_token_type())
+    }
+
+    /// 次に読み込むトークンの優先順位を取得する関数
+    fn peek_prefix_precedence(&self) -> Opt {
+        Parser::prefix_precedence(&self.peek_token.get_token_type())
+    }
     // パース処理
     // パース処理の基本はcurrentから解析を初めて、解析し終わったもので終わる
     // loopで一つ分になっているのでloopで次に来たら現在位置を更新
@@ -294,7 +316,7 @@ impl Parser {
 
         loop {
             // 文末終了で抜けるか次に解析しようとしていた中置演算子の優先順位が今の優先順位より低いときに終了する
-            if self.peek_token_is(TokenType::SEMICOLON) || precedence >= self.peek_precedence() {
+            if self.peek_token_is(TokenType::SEMICOLON) || precedence >= self.peek_infix_precedence() {
                 // セミコロンは式ではなく式文の領域なのでセミコロンの一つ前まで読み込んで終了
                 break;
             }
@@ -482,11 +504,20 @@ impl Parser {
 
     /// 前置演算子付きの式をパースする関数
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
-        // TODO
         // ここに来るということは前置演算子を持つ式だと確定してるはず
+        if self.current_prefix_precedence() != Opt::PREFIX {
+            self.make_parse_prefix_expression();
+            return None;
+        }
         let tok = self.current_token.clone();
         self.next_token();
-        let exp = self.parse_expression(Opt::PREFIX)?;
+        let exp = match self.parse_expression(Opt::PREFIX){
+            Some(e) => Some(e),
+            None => {
+                self.make_parse_expression_error();
+                None
+            }
+        }?;
         let expression = Expression::PrefixExpression {
             operator: tok.get_literal().clone(),
             token: tok,
@@ -499,7 +530,7 @@ impl Parser {
     fn parse_infix_expression(&mut self, left: Expression) -> Option<Expression> {
         // TODO
         let current = self.current_token.clone();
-        let precedence = self.current_precedence();
+        let precedence = self.current_infix_precedence();
         self.next_token();
         let expression = Expression::InfixExpression {
             operator: current.get_literal(),
@@ -654,6 +685,12 @@ impl Parser {
     /// 関数パラメーター用のパースエラー
     fn make_parse_parameters_error(&mut self){
         let msg = format!("関数の引数をパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
+    }
+
+    ///  前置演算子パーサー用のエラー
+    fn make_parse_prefix_expression(&mut self){
+        let msg = format!("前置演算子をパースできませんでした。{}", self.get_tokens_str());
         self.errors.push(msg);
     }
 
