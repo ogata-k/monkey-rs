@@ -103,7 +103,7 @@ impl Parser {
         Parser::precedences(&self.peek_token.get_token_type())
     }
 
-    // パース処理 TODO ?で抜けている個所でちゃんとエラーを埋め込むように改良する
+    // パース処理
     // パース処理の基本はcurrentから解析を初めて、解析し終わったもので終わる
     // loopで一つ分になっているのでloopで次に来たら現在位置を更新
     /// 字句解析器の結果を元にMonkeyプログラムを表す解釈木を生成する関数
@@ -482,6 +482,7 @@ impl Parser {
 
     /// 前置演算子付きの式をパースする関数
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
+        // TODO
         // ここに来るということは前置演算子を持つ式だと確定してるはず
         let tok = self.current_token.clone();
         self.next_token();
@@ -496,6 +497,7 @@ impl Parser {
 
     /// 中置演算子式を優先規則を元にパースする関数
     fn parse_infix_expression(&mut self, left: Expression) -> Option<Expression> {
+        // TODO
         let current = self.current_token.clone();
         let precedence = self.current_precedence();
         self.next_token();
@@ -510,6 +512,7 @@ impl Parser {
 
     /// if-else文をパースするプログラム
     fn parse_if_expression(&mut self) -> Option<Expression> {
+        // TODO
         // ここに入ってきたときにはIFトークンを読み込んでいる状態なので読み進める
         let tok = self.current_token.clone();
         self.next_token();
@@ -545,6 +548,7 @@ impl Parser {
 
     /// 波括弧に囲まれた部分をパースする
     fn parse_block_statement(&mut self) -> Option<Statement> {
+        // TODO
         // ここに来るときは左波括弧のトークンを読み込んだ時
         if !self.current_token_is(TokenType::LBRACE) {
             self.make_current_expect_error(TokenType::LBRACE);
@@ -571,6 +575,7 @@ impl Parser {
 
     /// 丸括弧で囲まれたグループの式をパースする
     fn parse_grouped_expression(&mut self) -> Option<Expression> {
+        // TODO
         // ここに来るときは左丸括弧を読み込んだ時なのでひとつ消費して次から調べる
         self.next_token();
         let exp = self.parse_expression(Opt::LOWEST);
