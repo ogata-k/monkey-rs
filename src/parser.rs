@@ -528,15 +528,25 @@ impl Parser {
 
     /// 中置演算子式を優先規則を元にパースする関数
     fn parse_infix_expression(&mut self, left: Expression) -> Option<Expression> {
-        // TODO
+        if self.current_infix_precedence() == Opt::LOWEST {
+            self.make_parse_infix_expression();
+            return None;
+        }
         let current = self.current_token.clone();
         let precedence = self.current_infix_precedence();
         self.next_token();
+        let right = match self.parse_expression(precedence){
+            Some(e) => Some(e),
+            None => {
+                self.make_parse_expression_error();
+                None
+            }
+        }?;
         let expression = Expression::InfixExpression {
             operator: current.get_literal(),
             token: current,
             left_exp: Box::new(left),
-            right_exp: Box::new(self.parse_expression(precedence)?),
+            right_exp: Box::new(right),
         };
         return Some(expression);
     }
@@ -694,6 +704,12 @@ impl Parser {
         self.errors.push(msg);
     }
 
+    ///  中置演算子パーサー用のエラー
+    fn make_parse_infix_expression(&mut self){
+        let msg = format!("中置演算子をパースできませんでした。{}", self.get_tokens_str());
+        self.errors.push(msg);
+    }
+
     /// ブロック文のパースに失敗した場合のエラー
     fn make_parse_block_statement_error(&mut self) {
         let msg = format!("ブロックをパースできませんでした。{}", self.get_tokens_str());
@@ -798,7 +814,7 @@ mod test {
             } => {
                 // トークンのreturnで始まってるか確認
                 assert_eq!(token.get_literal(), "return");
-                assert_eq!(return_value.get_value(), expect.to_string());
+                assert_eq!(return_value.to_string(), expect.to_string());
             }
             _ => {
                 assert!(false, "return文ではありません。{:?}", stmt);
@@ -850,7 +866,7 @@ mod test {
                 assert_eq!(token.get_literal(), "let");
                 // 束縛変数名の確認
                 assert_eq!(name.get_value(), name_expect);
-                assert_eq!(value.get_value(), value_expect);
+                assert_eq!(value.to_string(), value_expect);
             }
             _ => {
                 assert!(false, "let文ではありません。");
