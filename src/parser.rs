@@ -553,14 +553,18 @@ impl Parser {
 
     /// if-else文をパースするプログラム
     fn parse_if_expression(&mut self) -> Option<Expression> {
-        // TODO なんか式のパーサーの終わる位置が一つ分先に進んでいる
         if !self.current_token_is(TokenType::IF) {
             self.make_current_expect_error(TokenType::IF);
             return None;
         }
         // ここに入ってきたときにはIFトークンを読み込んでいる状態なので読み進める
         let tok = self.current_token.clone();
-        self.next_token();
+        if !self.peek_token_is(TokenType::LPAREN) {
+            self.make_peek_expect_error(TokenType::LPAREN);
+            return None;
+        }
+        self.next_token();  // skip IF
+        self.next_token();  // skip LPAREN
         let condition = match self.parse_expression(Opt::LOWEST){
             Some(e) => Some(e),
             None => {
@@ -568,7 +572,6 @@ impl Parser {
                 None
             }
         }?;
-        eprintln!("{:?} {}", condition, self.get_tokens_str());
         if !self.peek_token_is(TokenType::RPAREN) {
             self.make_peek_expect_error(TokenType::RPAREN);
             return None;
@@ -1144,7 +1147,7 @@ mod test {
     /// if式のifブロックのみをパースするテスト
     #[test]
     fn test_if_expression() {
-        let input = "if (x > y){ x; }";
+        let input = "if (x > y){ x; };";
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -1166,7 +1169,7 @@ mod test {
             expression,
         } = &program.statements[0]
         {
-            assert_eq!(expression.to_string(), "if (x > y){x;}");
+            assert_eq!(program.to_string(), "if (x > y){x;};");
             if let Expression::IfExpression {
                 token: _,
                 condition,
@@ -1192,7 +1195,7 @@ mod test {
     /// if-else式をパースするテスト
     #[test]
     fn test_if_else_expression() {
-        let input = "if (x > y){ x; }else{y;}";
+        let input = "if (x > y){ x; }else{y;};";
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -1214,7 +1217,7 @@ mod test {
             expression,
         } = &program.statements[0]
         {
-            assert_eq!(expression.to_string(), "if (x > y){x;} else{y;}");
+            assert_eq!(program.to_string(), "if (x > y){x;} else{y;};");
             if let Expression::IfExpression {
                 token: _,
                 condition,
