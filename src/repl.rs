@@ -2,11 +2,14 @@ use std::io::{BufRead, BufReader, LineWriter, Read, Write};
 
 use crate::lexer::Lexer;
 use crate::token::TokenType;
+use crate::parser::Parser;
 
 /// 入力促進メッセージ
 const PROMPT: &str = ">> ";
 /// REPL終了用の入力記号
 const FINISH_KEY: &str = "\u{4}";
+/// 区切りの繰り返し数
+const REPEAT_COUNT: usize = 30;
 
 /// 入力を受けて改行区切りのトークン列に変換する関数
 pub fn start(reader: impl Read, writer: impl Write) {
@@ -24,8 +27,10 @@ pub fn start(reader: impl Read, writer: impl Write) {
         if line.trim() == FINISH_KEY {
             break;
         }
-        let mut lexer = Lexer::new(&line);
 
+        writeln!(w, "start Lexer: {}", "-".repeat(REPEAT_COUNT)).unwrap();
+
+        let mut lexer = Lexer::new(&line);
         while let tok = lexer.next_token() {
             if tok.token_type_is(TokenType::EOF) {
                 break;
@@ -35,5 +40,20 @@ pub fn start(reader: impl Read, writer: impl Write) {
             }
             write!(w, "{:?}\n", tok).unwrap();
         }
+        writeln!(w, "end Lexer: {}", "-".repeat(REPEAT_COUNT)).unwrap();
+
+        writeln!(w, "start parser: {}", "-".repeat(REPEAT_COUNT)).unwrap();
+        let mut program_opt = Parser::new(Lexer::new(&line)).parse_program();
+        if program_opt.is_none(){
+            // TODO 今パーサーのテストのエラーメッセージで使ってるパースエラー関数をここで使えるようにする
+            writeln!(w, "parse error").unwrap();
+        } else {
+            let program = program_opt.unwrap();
+            let program_str = program.to_string();
+            writeln!(w, "Program string: {}", program_str).unwrap();
+            writeln!(w, "AST: {:?}", program).unwrap();
+        }
+        writeln!(w, "end parser: {}", "-".repeat(REPEAT_COUNT)).unwrap();
+
     }
 }
