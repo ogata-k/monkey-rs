@@ -154,7 +154,7 @@ impl Parser {
                     self.next_token();
                     if self.current_token_is(TokenType::EOF) || self.current_token_is(TokenType::ILLEGAL) {
                         self.make_illegal_error();
-                        return None;
+                        break;
                     }
                 }
                 self.next_token();
