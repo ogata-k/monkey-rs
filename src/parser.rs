@@ -94,7 +94,7 @@ impl Parser {
         self.peek_token = self.lexer.next_token();
     }
 
-   /// 次に読み込む演算子が前置演算子のトークンか調べる関数
+    /// 次に読み込む演算子が前置演算子のトークンか調べる関数
     fn peek_token_is_prefix(&self) -> bool {
         // 中置演算子の優先順位表をもちいて最低順位以外に変換できれば中置演算子ではない
         self.peek_prefix_precedence() == Opt::PREFIX
@@ -152,7 +152,9 @@ impl Parser {
                 self.make_parse_statement_error();
                 while !self.current_token_is(TokenType::SEMICOLON) {
                     self.next_token();
-                    if self.current_token_is(TokenType::EOF) || self.current_token_is(TokenType::ILLEGAL) {
+                    if self.current_token_is(TokenType::EOF)
+                        || self.current_token_is(TokenType::ILLEGAL)
+                    {
                         self.make_illegal_error();
                         break;
                     }
@@ -304,7 +306,7 @@ impl Parser {
             TokenType::IF => self.parse_if_expression(),
             TokenType::FUNCTION => self.parse_function_literal(),
             TokenType::IDENT => self.parse_identifier(),
-            TokenType::INT => { self.parse_integer_literal() }
+            TokenType::INT => self.parse_integer_literal(),
             TokenType::TRUE | TokenType::FALSE => self.parse_boolean_literal(),
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
             TokenType::LPAREN => self.parse_grouped_expression(),
@@ -316,7 +318,9 @@ impl Parser {
 
         loop {
             // 文末終了で抜けるか次に解析しようとしていた中置演算子の優先順位が今の優先順位より低いときに終了する
-            if self.peek_token_is(TokenType::SEMICOLON) || precedence >= self.peek_infix_precedence() {
+            if self.peek_token_is(TokenType::SEMICOLON)
+                || precedence >= self.peek_infix_precedence()
+            {
                 // セミコロンは式ではなく式文の領域なのでセミコロンの一つ前まで読み込んで終了
                 break;
             }
@@ -324,7 +328,7 @@ impl Parser {
             if self.peek_token_is_infix() {
                 if self.peek_token_is(TokenType::LPAREN)
                     && (left.get_token().token_type_is(TokenType::FUNCTION)
-                    || left.get_token().token_type_is(TokenType::IDENT))
+                        || left.get_token().token_type_is(TokenType::IDENT))
                 {
                     self.next_token();
                     // 関数呼び出しの時
@@ -342,7 +346,7 @@ impl Parser {
 
     /// 認識句用の式をパースする関数
     fn parse_identifier(&mut self) -> Option<Expression> {
-        if self.current_token_is(TokenType::EOF) || self.current_token_is(TokenType::ILLEGAL){
+        if self.current_token_is(TokenType::EOF) || self.current_token_is(TokenType::ILLEGAL) {
             self.make_parse_identifier_error();
             return None;
         }
@@ -354,7 +358,7 @@ impl Parser {
 
     /// 整数リテラルのパーサー
     fn parse_integer_literal(&mut self) -> Option<Expression> {
-        let lit = match self.current_token.get_literal().parse::<i64>().ok(){
+        let lit = match self.current_token.get_literal().parse::<i64>().ok() {
             Some(i) => Some(i),
             None => {
                 self.make_parse_integer_literal_error();
@@ -369,7 +373,7 @@ impl Parser {
 
     /// 真理値リテラルのパーサー
     fn parse_boolean_literal(&mut self) -> Option<Expression> {
-        let lit = match self.current_token.get_literal().parse::<bool>().ok(){
+        let lit = match self.current_token.get_literal().parse::<bool>().ok() {
             Some(b) => Some(b),
             None => {
                 self.make_parse_boolean_literal_error();
@@ -409,7 +413,7 @@ impl Parser {
         }
         // ブロック文のために開始位置を調節
         self.next_token();
-        let body = match self.parse_block_statement(){
+        let body = match self.parse_block_statement() {
             Some(b) => Some(b),
             None => {
                 self.make_parse_block_statement_error();
@@ -443,8 +447,8 @@ impl Parser {
                 self.next_token();
                 return true;
             }
-                // 来てほしいトークンのホワイトリストを抜けたのでエラー扱い
-                return false;
+            // 来てほしいトークンのホワイトリストを抜けたのでエラー扱い
+            return false;
         }
     }
 
@@ -498,7 +502,7 @@ impl Parser {
                 return true;
             }
             // 正常終了のホワイトリストを抜けたのでエラー
-                return false;
+            return false;
         }
     }
 
@@ -511,7 +515,7 @@ impl Parser {
         }
         let tok = self.current_token.clone();
         self.next_token();
-        let exp = match self.parse_expression(Opt::PREFIX){
+        let exp = match self.parse_expression(Opt::PREFIX) {
             Some(e) => Some(e),
             None => {
                 self.make_parse_expression_error();
@@ -535,7 +539,7 @@ impl Parser {
         let current = self.current_token.clone();
         let precedence = self.current_infix_precedence();
         self.next_token();
-        let right = match self.parse_expression(precedence){
+        let right = match self.parse_expression(precedence) {
             Some(e) => Some(e),
             None => {
                 self.make_parse_expression_error();
@@ -563,9 +567,9 @@ impl Parser {
             self.make_peek_expect_error(TokenType::LPAREN);
             return None;
         }
-        self.next_token();  // skip IF
-        self.next_token();  // skip LPAREN
-        let condition = match self.parse_expression(Opt::LOWEST){
+        self.next_token(); // skip IF
+        self.next_token(); // skip LPAREN
+        let condition = match self.parse_expression(Opt::LOWEST) {
             Some(e) => Some(e),
             None => {
                 self.make_parse_expression_error();
@@ -613,14 +617,14 @@ impl Parser {
         let brace_tok = self.current_token.clone();
         self.next_token();
         let mut statements = vec![];
-        if self.current_token_is(TokenType::RBRACE){
+        if self.current_token_is(TokenType::RBRACE) {
             return Some(Statement::BlockStatement {
-            token: brace_tok,
-            statements,
-        });
+                token: brace_tok,
+                statements,
+            });
         }
         loop {
-            let stmt = match self.parse_statement(){
+            let stmt = match self.parse_statement() {
                 Some(s) => Some(s),
                 None => {
                     self.make_parse_statement_error();
@@ -628,7 +632,7 @@ impl Parser {
                 }
             }?;
             statements.push(Box::new(stmt));
-            if self.peek_token_is(TokenType::RBRACE){
+            if self.peek_token_is(TokenType::RBRACE) {
                 self.next_token();
                 break;
             }
@@ -649,7 +653,7 @@ impl Parser {
 
     /// 丸括弧で囲まれたグループの式をパースする
     fn parse_grouped_expression(&mut self) -> Option<Expression> {
-        if !self.current_token_is(TokenType::LPAREN){
+        if !self.current_token_is(TokenType::LPAREN) {
             self.make_current_expect_error(TokenType::LPAREN);
             return None;
         }
@@ -666,7 +670,10 @@ impl Parser {
     // エラー関係の関数群
     /// 現在のトークン情報を返す文字列
     fn get_tokens_str(&self) -> String {
-        return format!("\n\tcurrent: {:?}\n\tpeek: {:?}", self.current_token, self.peek_token);
+        return format!(
+            "\n\tcurrent: {:?}\n\tpeek: {:?}",
+            self.current_token, self.peek_token
+        );
     }
     /// パースエラーを返す関数
     pub fn get_errors(&self) -> Vec<String> {
@@ -674,73 +681,109 @@ impl Parser {
     }
     ///  異常なトークンを検出した場合のエラー
     fn make_illegal_error(&mut self) {
-        let msg = format!("異常なトークンを検出しました。{}", self.get_tokens_str());
+        let msg = format!(
+            "異常なトークンを検出しました。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     /// 文のパースに失敗した場合のエラー
     fn make_parse_statement_error(&mut self) {
-        let msg = format!("文をパースできませんでした。{}", self.get_tokens_str());
+        let msg = format!(
+            "文をパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     /// 式のパースに失敗した場合のエラー
     fn make_parse_expression_error(&mut self) {
-        let msg = format!("式をパースできませんでした。{}", self.get_tokens_str());
+        let msg = format!(
+            "式をパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     /// 識別子のパースに失敗した場合のエラー
     fn make_parse_identifier_error(&mut self) {
-        let msg = format!("識別子リテラルをパースできませんでした。{}", self.get_tokens_str());
+        let msg = format!(
+            "識別子リテラルをパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     /// 整数リテラルのパースに失敗した場合のエラー
-    fn make_parse_integer_literal_error(&mut self){
-        let msg = format!("整数をパースできませんでした。{}", self.get_tokens_str());
+    fn make_parse_integer_literal_error(&mut self) {
+        let msg = format!(
+            "整数をパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     /// 真理値リテラルのパースに失敗した場合のエラー
-    fn make_parse_boolean_literal_error(&mut self){
-        let msg = format!("真理値をパースできませんでした。{}", self.get_tokens_str());
+    fn make_parse_boolean_literal_error(&mut self) {
+        let msg = format!(
+            "真理値をパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     /// 関数パラメーター用のパースエラー
-    fn make_parse_parameters_error(&mut self){
-        let msg = format!("関数の引数をパースできませんでした。{}", self.get_tokens_str());
+    fn make_parse_parameters_error(&mut self) {
+        let msg = format!(
+            "関数の引数をパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     ///  前置演算子パーサー用のエラー
-    fn make_parse_prefix_expression(&mut self){
-        let msg = format!("前置演算子をパースできませんでした。{}", self.get_tokens_str());
+    fn make_parse_prefix_expression(&mut self) {
+        let msg = format!(
+            "前置演算子をパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     ///  中置演算子パーサー用のエラー
-    fn make_parse_infix_expression(&mut self){
-        let msg = format!("中置演算子をパースできませんでした。{}", self.get_tokens_str());
+    fn make_parse_infix_expression(&mut self) {
+        let msg = format!(
+            "中置演算子をパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     /// ブロック文のパースに失敗した場合のエラー
     fn make_parse_block_statement_error(&mut self) {
-        let msg = format!("ブロックをパースできませんでした。{}", self.get_tokens_str());
+        let msg = format!(
+            "ブロックをパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     /// 関数を呼び出すときの引数のパースエラー
     fn make_parse_call_arguments_error(&mut self) {
-        let msg = format!("引数をパースできませんでした。{}", self.get_tokens_str());
+        let msg = format!(
+            "引数をパースできませんでした。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
     /// 分岐の時に予期せぬトークンを取得したときのエラー
     fn make_unknown_token_error(&mut self) {
-        let msg = format!("予期せぬトークンを読み込みました。読み取ったトークンが不正です。{}", self.get_tokens_str());
+        let msg = format!(
+            "予期せぬトークンを読み込みました。読み取ったトークンが不正です。{}",
+            self.get_tokens_str()
+        );
         self.errors.push(msg);
     }
 
@@ -807,12 +850,20 @@ mod test {
         check_parser_errors(&parser);
 
         if program_opt.is_none() {
-            assert!(false, "return文のパースに失敗しました。{}", input);
+            assert!(
+                false,
+                "return文のパースに失敗しました。{}",
+                input
+            );
         }
         let program = program_opt.unwrap();
         let statements = &program.statements;
         if statements.len() != 3 {
-            assert!(false, "return文の個数が不適切です。{:?}", statements);
+            assert!(
+                false,
+                "return文の個数が不適切です。{:?}",
+                statements
+            );
         }
 
         let tests = ["1", "(x + y)", "z"];
@@ -859,7 +910,11 @@ mod test {
         let program = program_opt.unwrap();
         let statements = &program.statements;
         if statements.len() != 3 {
-            assert!(false, "let文の個数が不適切です。{:?}", statements);
+            assert!(
+                false,
+                "let文の個数が不適切です。{:?}",
+                statements
+            );
         }
 
         let tests = [("x", "5"), ("y", "(a + b)"), ("foobar", "c")];
@@ -871,13 +926,9 @@ mod test {
     }
 
     // 束縛される値は後でやるとして、束縛時の変数名をテストする関数
-    fn test_let_statement(stmt: &Statement,  name_expect: &str, value_expect: &str) {
+    fn test_let_statement(stmt: &Statement, name_expect: &str, value_expect: &str) {
         match stmt {
-            Statement::LetStatement {
-                token,
-                name,
-                value,
-            } => {
+            Statement::LetStatement { token, name, value } => {
                 // トークンのletで始まってるか確認
                 assert_eq!(token.get_literal(), "let");
                 // 束縛変数名の確認
@@ -904,7 +955,11 @@ mod test {
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
         if program_opt.is_none() {
-            assert!(false, "プログラムのパースに失敗しました。{}", input);
+            assert!(
+                false,
+                "プログラムのパースに失敗しました。{}",
+                input
+            );
         }
         let program = program_opt.unwrap();
 
@@ -958,7 +1013,11 @@ mod test {
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
         if program_opt.is_none() {
-            assert!(false, "プログラムのパースに失敗しました。{}", input);
+            assert!(
+                false,
+                "プログラムのパースに失敗しました。{}",
+                input
+            );
         }
         let program = program_opt.unwrap();
 
@@ -997,7 +1056,11 @@ mod test {
             let program_opt = parser.parse_program();
             check_parser_errors(&parser);
             if program_opt.is_none() {
-                assert!(false, "プログラムのパースに失敗しました。{}", input);
+                assert!(
+                    false,
+                    "プログラムのパースに失敗しました。{}",
+                    input
+                );
             }
             let program = program_opt.unwrap();
 
@@ -1041,7 +1104,11 @@ mod test {
             let program_opt = parser.parse_program();
             check_parser_errors(&parser);
             if program_opt.is_none() {
-                assert!(false, "プログラムのパースに失敗しました。{}", input);
+                assert!(
+                    false,
+                    "プログラムのパースに失敗しました。{}",
+                    input
+                );
             }
             let program = program_opt.unwrap();
 
@@ -1083,7 +1150,11 @@ mod test {
             assert_eq!(token.get_literal(), format!("{}", v));
             assert_eq!(*value, v);
         } else {
-            assert!(false, "整数リテラルではありませんでした。{}", exp.get_token().get_literal())
+            assert!(
+                false,
+                "整数リテラルではありませんでした。{}",
+                exp.get_token().get_literal()
+            )
         }
     }
 
@@ -1108,7 +1179,11 @@ mod test {
             let program_opt = parser.parse_program();
             check_parser_errors(&parser);
             if program_opt.is_none() {
-                assert!(false, "プログラムのパースに失敗しました。{}", input);
+                assert!(
+                    false,
+                    "プログラムのパースに失敗しました。{}",
+                    input
+                );
             }
             let program = program_opt.unwrap();
 
@@ -1139,7 +1214,7 @@ mod test {
                     test_integer_literal(right_value, &**right_exp);
                 }
             } else {
-                assert!(false, "入力が式文ではありません。{}", );
+                assert!(false, "入力が式文ではありません。{}",);
             }
         }
     }
@@ -1154,7 +1229,11 @@ mod test {
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
         if program_opt.is_none() {
-            assert!(false, "プログラムのパースに失敗しました。{}", input);
+            assert!(
+                false,
+                "プログラムのパースに失敗しました。{}",
+                input
+            );
         }
         let program = program_opt.unwrap();
         if program.statements.len() != 1 {
@@ -1188,7 +1267,11 @@ mod test {
                 );
             }
         } else {
-            assert!(false, "入力が式文ではありません。{}", program.statements[0].get_token().get_literal());
+            assert!(
+                false,
+                "入力が式文ではありません。{}",
+                program.statements[0].get_token().get_literal()
+            );
         }
     }
 
@@ -1202,7 +1285,11 @@ mod test {
         let program_opt = parser.parse_program();
         check_parser_errors(&parser);
         if program_opt.is_none() {
-            assert!(false, "プログラムのパースに失敗しました。{}", input);
+            assert!(
+                false,
+                "プログラムのパースに失敗しました。{}",
+                input
+            );
         }
         let program = program_opt.unwrap();
         if program.statements.len() != 1 {
@@ -1240,7 +1327,11 @@ mod test {
                 );
             }
         } else {
-            assert!(false, "入力が式文ではありません。{}", program.statements[0].get_token().get_literal());
+            assert!(
+                false,
+                "入力が式文ではありません。{}",
+                program.statements[0].get_token().get_literal()
+            );
         }
     }
 
@@ -1290,7 +1381,11 @@ mod test {
                 {
                     assert!(token.token_type_is(TokenType::FUNCTION));
                 } else {
-                    assert!(false, "関数リテラルではありませんでした。{}", expression.get_token().get_literal());
+                    assert!(
+                        false,
+                        "関数リテラルではありませんでした。{}",
+                        expression.get_token().get_literal()
+                    );
                 }
             } else {
                 assert!(false, "入力が式文ではありません。{}", input);
@@ -1340,7 +1435,7 @@ mod test {
             }
             if let Statement::ExpressionStatement {
                 token: _,
-                expression,
+                expression: _,
             } = &program.statements[0]
             {
                 assert_eq!(program.to_string(), expect.to_string());

@@ -1,8 +1,8 @@
 use std::io::{BufRead, BufReader, LineWriter, Read, Write};
 
 use crate::lexer::Lexer;
-use crate::token::TokenType;
 use crate::parser::Parser;
+use crate::token::TokenType;
 
 /// 入力促進メッセージ
 const PROMPT: &str = ">> ";
@@ -43,10 +43,19 @@ pub fn start(reader: impl Read, writer: impl Write) {
         writeln!(w, "end Lexer: {}", "-".repeat(REPEAT_COUNT)).unwrap();
 
         writeln!(w, "start parser: {}", "-".repeat(REPEAT_COUNT)).unwrap();
-        let mut program_opt = Parser::new(Lexer::new(&line)).parse_program();
-        if program_opt.is_none(){
-            // TODO 今パーサーのテストのエラーメッセージで使ってるパースエラー関数をここで使えるようにする
-            writeln!(w, "parse error").unwrap();
+        let mut parser = Parser::new(Lexer::new(&line));
+        let program_opt = parser.parse_program();
+        if program_opt.is_none() {
+            let errors = parser.get_errors();
+            writeln!(
+                w,
+                "パースエラーが{}件発生しました。",
+                errors.len()
+            )
+            .unwrap();
+            for error in errors {
+                writeln!(w, "{}", error).unwrap();
+            }
         } else {
             let program = program_opt.unwrap();
             let program_str = program.to_string();
@@ -54,6 +63,5 @@ pub fn start(reader: impl Read, writer: impl Write) {
             writeln!(w, "AST: {:?}", program).unwrap();
         }
         writeln!(w, "end parser: {}", "-".repeat(REPEAT_COUNT)).unwrap();
-
     }
 }
