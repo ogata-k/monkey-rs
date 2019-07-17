@@ -1,4 +1,5 @@
 /// オブジェクトシステム上で管理するための型情報
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum ObjectType {
     StringObject(String),
 }
