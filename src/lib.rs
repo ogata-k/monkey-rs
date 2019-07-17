@@ -15,3 +15,6 @@ pub mod parser;
 
 /// REPLを扱うためのモジュール
 pub mod repl;
+
+/// オブジェクトシステム用のモジュール
+pub mod object;
