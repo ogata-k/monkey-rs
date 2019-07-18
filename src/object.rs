@@ -1,7 +1,7 @@
 // 定数
-pub const NULL_OBJECT: &str = "NULL";
-pub const INTEGER_OBJECT: &str = "INTEGER";
-pub const BOOLEAN_OBJECT: &str = "BOOLEAN";
+const NULL_OBJECT: &str = "NULL";
+const INTEGER_OBJECT: &str = "INTEGER";
+const BOOLEAN_OBJECT: &str = "BOOLEAN";
 
 /// オブジェクトシステム上で管理するための型情報
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
