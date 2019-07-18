@@ -1,5 +1,5 @@
-use crate::ast::*;
 use crate::ast::Program;
+use crate::ast::*;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 
