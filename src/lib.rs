@@ -18,3 +18,6 @@ pub mod repl;
 
 /// オブジェクトシステム用のモジュール
 pub mod object;
+
+/// 式を評価するためのモジュール
+pub mod evaluator;
