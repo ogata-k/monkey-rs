@@ -37,7 +37,7 @@ pub fn start(reader: impl Read, writer: impl Write) {
                 break;
             }
             if tok.token_type_is(TokenType::ILLEGAL) {
-                writeln!(w, "異常な入力を検知しました。");
+                writeln!(w, "異常な入力を検知しました。").unwrap();
                 continue 'main;
             }
             write!(w, "{:?}\n", tok).unwrap();
