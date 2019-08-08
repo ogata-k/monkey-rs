@@ -3,6 +3,7 @@ use std::io::{BufRead, BufReader, LineWriter, Read, Write};
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::token::TokenType;
+use crate::evaluator::Eval;
 
 /// 入力促進メッセージ
 const PROMPT: &str = ">> ";
@@ -56,12 +57,17 @@ pub fn start(reader: impl Read, writer: impl Write) {
             for error in errors {
                 writeln!(w, "{}", error).unwrap();
             }
-        } else {
-            let program = program_opt.unwrap();
-            let program_str = program.to_string();
-            writeln!(w, "Program string: {}", program_str).unwrap();
-            writeln!(w, "AST: {:?}", program).unwrap();
+            break;
         }
+        let program = program_opt.unwrap();
+        let program_str = program.to_string();
+        writeln!(w, "Program string: {}", program_str).unwrap();
+        writeln!(w, "AST: {:?}", program).unwrap();
         writeln!(w, "end parser: {}", "-".repeat(REPEAT_COUNT)).unwrap();
+
+        writeln!(w, "start evaluator: {}", "-".repeat(REPEAT_COUNT)).unwrap();
+        let evaluated = Eval::eval_program(&program);
+        writeln!(w, "evaluated: {:?}", evaluated).unwrap();
+        writeln!(w, "end evaluator: {}", "-".repeat(REPEAT_COUNT)).unwrap();
     }
 }
