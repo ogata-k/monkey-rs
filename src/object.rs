@@ -51,6 +51,7 @@ impl ToString for Object{
 impl Object {
     pub const BOOLEAN_TRUE: Object = Object::Boolean{value: true};
     pub const BOOLEAN_FALSE: Object = Object::Boolean{value: false};
+    pub const NULL: Object = Object::Null;
 
     pub fn get_type(&self) -> ObjectType {
         match self {

@@ -10,7 +10,7 @@ impl Eval {
     }
 
     fn eval_statements(statements: &Vec<Statement>) -> Object {
-        let mut result = Object::Null;
+        let mut result = Object::NULL;
 
         for statement in statements {
             result = Self::eval_statement(&statement);
@@ -19,7 +19,7 @@ impl Eval {
     }
 
     fn eval_statement(statement: &Statement) -> Object {
-        let mut result = Object::Null;
+        let mut result = Object::NULL;
 
         match statement {
             stmt @ Statement::ExpressionStatement { token: _, expression: _ } => {
@@ -39,7 +39,7 @@ impl Eval {
     }
 
     fn eval_expression_statement(statement: &Statement) -> Object {
-        let mut result = Object::Null;
+        let mut result = Object::NULL;
         match statement {
             Statement::ExpressionStatement { token: _, expression: exp } => {
                 result = Self::eval_expression(exp);
@@ -50,7 +50,7 @@ impl Eval {
     }
 
     fn eval_expression(expression: &Expression) -> Object {
-        let mut result = Object::Null;
+        let mut result = Object::NULL;
         match expression {
             Expression::Identifier { token: _, value: _ } => {
                 unimplemented!()
