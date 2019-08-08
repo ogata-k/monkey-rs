@@ -17,13 +17,13 @@ pub fn start(reader: impl Read, writer: impl Write) {
     let mut r = BufReader::new(reader);
     let mut w = LineWriter::new(writer);
 
-    loop {
+    'main: loop {
         write!(w, "{}", PROMPT).unwrap();
         w.flush().unwrap();
         let mut line = "".to_string();
         let res = r.read_line(&mut line);
         if res.is_err() {
-            break;
+            continue 'main;
         }
         if line.trim() == FINISH_KEY {
             break;
@@ -37,7 +37,8 @@ pub fn start(reader: impl Read, writer: impl Write) {
                 break;
             }
             if tok.token_type_is(TokenType::ILLEGAL) {
-                panic!("異常な入力を検知しました。終了します。");
+                writeln!(w, "異常な入力を検知しました。");
+                continue 'main;
             }
             write!(w, "{:?}\n", tok).unwrap();
         }
@@ -57,7 +58,7 @@ pub fn start(reader: impl Read, writer: impl Write) {
             for error in errors {
                 writeln!(w, "{}", error).unwrap();
             }
-            break;
+            continue 'main;
         }
         let program = program_opt.unwrap();
         let program_str = program.to_string();
