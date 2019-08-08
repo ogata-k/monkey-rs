@@ -58,8 +58,12 @@ impl Eval {
             Expression::IntegerLiteral { token: _, value } => {
                 result = Object::Integer { value: *value };
             }
-            Expression::BooleanLiteral { token: _, value: _ } => {
-                unimplemented!()
+            Expression::BooleanLiteral { token: _, value } => {
+                if *value {
+                    result = Object::BOOLEAN_TRUE;
+                } else {
+                    result = Object::BOOLEAN_FALSE;
+                }
             }
             Expression::FunctionLiteral { token: _, parameters: _, body: _ } => {
                 unimplemented!()
@@ -93,6 +97,19 @@ mod test {
         let tests = [
             ("5;", Object::Integer { value: 5 }),
             ("10;", Object::Integer { value: 10 }),
+        ];
+
+        for (input, expected) in tests.to_vec() {
+            let evaluated = test_eval(input);
+            assert_eq!(evaluated, expected);
+        }
+    }
+
+    #[test]
+    fn test_eval_boolean_expression() {
+        let tests = [
+            ("true;", Object::Boolean { value: true }),
+            ("false;", Object::Boolean { value: false }),
         ];
 
         for (input, expected) in tests.to_vec() {
