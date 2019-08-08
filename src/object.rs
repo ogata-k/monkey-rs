@@ -37,6 +37,17 @@ pub enum Object {
     Boolean { value: bool },
 }
 
+impl ToString for Object{
+    fn to_string(&self) -> String {
+        use Object::*;
+        match self {
+            Null => "null".to_string(),
+            Integer { value: v } => format!("{}", v),
+            Boolean { value: v } => format!("{}", v),
+        }
+    }
+}
+
 impl Object {
     pub fn get_type(&self) -> ObjectType {
         match self {

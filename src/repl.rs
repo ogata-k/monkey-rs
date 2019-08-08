@@ -67,7 +67,7 @@ pub fn start(reader: impl Read, writer: impl Write) {
 
         writeln!(w, "start evaluator: {}", "-".repeat(REPEAT_COUNT)).unwrap();
         let evaluated = Eval::eval_program(&program);
-        writeln!(w, "evaluated: {:?}", evaluated).unwrap();
+        writeln!(w, "evaluated: {}", evaluated.to_string()).unwrap();
         writeln!(w, "end evaluator: {}", "-".repeat(REPEAT_COUNT)).unwrap();
     }
 }
