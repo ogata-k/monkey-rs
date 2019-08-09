@@ -2,7 +2,7 @@ use crate::ast::{Expression, Program, Statement};
 use crate::object::Object;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
-pub struct Eval{}
+pub struct Eval {}
 
 impl Eval {
     pub fn eval_program(program: &Program) -> Object {
@@ -22,18 +22,25 @@ impl Eval {
         let mut result = Object::NULL;
 
         match statement {
-            stmt @ Statement::ExpressionStatement { token: _, expression: _ } => {
+            stmt @ Statement::ExpressionStatement {
+                token: _,
+                expression: _,
+            } => {
                 result = Self::eval_expression_statement(stmt);
             }
-            stmt @ Statement::LetStatement { token: _, name: _, value: _ } => {
-                unimplemented!()
-            }
-            stmt @ Statement::ReturnStatement { token: _, return_value: _ } => {
-                unimplemented!()
-            }
-            stmt @ Statement::BlockStatement { token: _, statements: _ } => {
-                unimplemented!()
-            }
+            stmt @ Statement::LetStatement {
+                token: _,
+                name: _,
+                value: _,
+            } => unimplemented!(),
+            stmt @ Statement::ReturnStatement {
+                token: _,
+                return_value: _,
+            } => unimplemented!(),
+            stmt @ Statement::BlockStatement {
+                token: _,
+                statements: _,
+            } => unimplemented!(),
         }
         result
     }
@@ -41,10 +48,13 @@ impl Eval {
     fn eval_expression_statement(statement: &Statement) -> Object {
         let mut result = Object::NULL;
         match statement {
-            Statement::ExpressionStatement { token: _, expression: exp } => {
+            Statement::ExpressionStatement {
+                token: _,
+                expression: exp,
+            } => {
                 result = Self::eval_expression(exp);
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
         result
     }
@@ -52,9 +62,7 @@ impl Eval {
     fn eval_expression(expression: &Expression) -> Object {
         let mut result = Object::NULL;
         match expression {
-            Expression::Identifier { token: _, value: _ } => {
-                unimplemented!()
-            }
+            Expression::Identifier { token: _, value: _ } => unimplemented!(),
             Expression::IntegerLiteral { token: _, value } => {
                 result = Object::Integer { value: *value };
             }
@@ -65,21 +73,33 @@ impl Eval {
                     result = Object::BOOLEAN_FALSE;
                 }
             }
-            Expression::FunctionLiteral { token: _, parameters: _, body: _ } => {
-                unimplemented!()
-            }
-            Expression::PrefixExpression { token: _, operator: _, right_exp: _ } => {
-                unimplemented!()
-            }
-            Expression::InfixExpression { token: _, operator: _, left_exp: _, right_exp: _ } => {
-                unimplemented!()
-            }
-            Expression::IfExpression { token: _, condition: _, consequence: _, alternative: _ } => {
-                unimplemented!()
-            }
-            Expression::CallExpression { token: _, function: _, arguments: _ } => {
-                unimplemented!()
-            }
+            Expression::FunctionLiteral {
+                token: _,
+                parameters: _,
+                body: _,
+            } => unimplemented!(),
+            Expression::PrefixExpression {
+                token: _,
+                operator: _,
+                right_exp: _,
+            } => unimplemented!(),
+            Expression::InfixExpression {
+                token: _,
+                operator: _,
+                left_exp: _,
+                right_exp: _,
+            } => unimplemented!(),
+            Expression::IfExpression {
+                token: _,
+                condition: _,
+                consequence: _,
+                alternative: _,
+            } => unimplemented!(),
+            Expression::CallExpression {
+                token: _,
+                function: _,
+                arguments: _,
+            } => unimplemented!(),
         }
         result
     }
@@ -99,10 +119,7 @@ mod test {
             ("10;", Object::Integer { value: 10 }),
         ];
 
-        for (input, expected) in tests.to_vec() {
-            let evaluated = test_eval(input);
-            assert_eq!(evaluated, expected);
-        }
+        do_test(&tests);
     }
 
     #[test]
@@ -112,10 +129,20 @@ mod test {
             ("false;", Object::Boolean { value: false }),
         ];
 
-        for (input, expected) in tests.to_vec() {
-            let evaluated = test_eval(input);
-            assert_eq!(evaluated, expected);
-        }
+        do_test(&tests);
+    }
+
+    #[test]
+    fn test_bang_operator() {
+        let tests = [
+            ("!true;", Object::BOOLEAN_FALSE),
+            ("!false;", Object::BOOLEAN_FALSE),
+            ("!5;", Object::BOOLEAN_FALSE),
+            ("!!true;", Object::BOOLEAN_FALSE),
+            ("!!false;", Object::BOOLEAN_FALSE),
+            ("!!5;", Object::BOOLEAN_FALSE),
+        ];
+        do_test(&tests);
     }
 
     fn test_eval(input: &str) -> Object {
@@ -124,5 +151,12 @@ mod test {
         let program = parser.parse_program();
 
         Eval::eval_program(&program.expect("fail parse program."))
+    }
+
+    fn do_test(tests: &[(&str, Object)]) {
+        for (input, expected) in tests.to_vec() {
+            let evaluated = test_eval(input);
+            assert_eq!(evaluated, expected);
+        }
     }
 }

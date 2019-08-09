@@ -37,7 +37,7 @@ pub enum Object {
     Boolean { value: bool },
 }
 
-impl ToString for Object{
+impl ToString for Object {
     fn to_string(&self) -> String {
         use Object::*;
         match self {
@@ -49,8 +49,8 @@ impl ToString for Object{
 }
 
 impl Object {
-    pub const BOOLEAN_TRUE: Object = Object::Boolean{value: true};
-    pub const BOOLEAN_FALSE: Object = Object::Boolean{value: false};
+    pub const BOOLEAN_TRUE: Object = Object::Boolean { value: true };
+    pub const BOOLEAN_FALSE: Object = Object::Boolean { value: false };
     pub const NULL: Object = Object::Null;
 
     pub fn get_type(&self) -> ObjectType {

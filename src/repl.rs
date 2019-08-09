@@ -1,9 +1,9 @@
 use std::io::{BufRead, BufReader, LineWriter, Read, Write};
 
+use crate::evaluator::Eval;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::token::TokenType;
-use crate::evaluator::Eval;
 
 /// 入力促進メッセージ
 const PROMPT: &str = ">> ";
