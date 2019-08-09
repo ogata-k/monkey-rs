@@ -80,9 +80,12 @@ impl Eval {
             } => unimplemented!(),
             Expression::PrefixExpression {
                 token: _,
-                operator: _,
-                right_exp: _,
-            } => unimplemented!(),
+                operator,
+                right_exp,
+            } => {
+                let right = Eval::eval_expression(right_exp);
+                result  = Eval::eval_prefix_expression(&operator, &right);
+            },
             Expression::InfixExpression {
                 token: _,
                 operator: _,
@@ -102,6 +105,26 @@ impl Eval {
             } => unimplemented!(),
         }
         result
+    }
+
+    fn eval_prefix_expression(operator: &str, right: &Object) -> Object {
+        match operator {
+            "!" => Eval::eval_bang_operation(right),
+            _ => Object::NULL,
+        }
+    }
+
+    fn eval_bang_operation(right: &Object) -> Object {
+        match right {
+            Object::Boolean {value} => {
+                if *value {
+                    Object::BOOLEAN_FALSE
+                } else {
+                    Object::BOOLEAN_TRUE
+                }
+            },
+            _ => Object::BOOLEAN_FALSE,
+        }
     }
 }
 
@@ -136,11 +159,11 @@ mod test {
     fn test_bang_operator() {
         let tests = [
             ("!true;", Object::BOOLEAN_FALSE),
-            ("!false;", Object::BOOLEAN_FALSE),
+            ("!false;", Object::BOOLEAN_TRUE),
             ("!5;", Object::BOOLEAN_FALSE),
-            ("!!true;", Object::BOOLEAN_FALSE),
+            ("!!true;", Object::BOOLEAN_TRUE),
             ("!!false;", Object::BOOLEAN_FALSE),
-            ("!!5;", Object::BOOLEAN_FALSE),
+            ("!!5;", Object::BOOLEAN_TRUE),
         ];
         do_test(&tests);
     }
