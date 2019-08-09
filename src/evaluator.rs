@@ -110,6 +110,7 @@ impl Eval {
     fn eval_prefix_expression(operator: &str, right: &Object) -> Object {
         match operator {
             "!" => Eval::eval_bang_operation(right),
+            "-" => Eval::eval_minus_operation(right),
             _ => Object::NULL,
         }
     }
@@ -126,6 +127,13 @@ impl Eval {
             _ => Object::BOOLEAN_FALSE,
         }
     }
+
+    fn eval_minus_operation(right: &Object) -> Object {
+        match right {
+            Object::Integer{value} => Object::Integer{value: -(*value)},
+            _ => Object::NULL,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -140,6 +148,8 @@ mod test {
         let tests = [
             ("5;", Object::Integer { value: 5 }),
             ("10;", Object::Integer { value: 10 }),
+            ("-5;", Object::Integer { value: -5 }),
+            ("-10;", Object::Integer { value: -10 }),
         ];
 
         do_test(&tests);
