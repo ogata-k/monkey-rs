@@ -1,5 +1,5 @@
 use crate::ast::{Expression, Program, Statement};
-use crate::object::Object;
+use crate::object::{Object, ObjectType};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
 pub struct Eval {}
@@ -88,10 +88,14 @@ impl Eval {
             },
             Expression::InfixExpression {
                 token: _,
-                operator: _,
-                left_exp: _,
-                right_exp: _,
-            } => unimplemented!(),
+                operator,
+                left_exp,
+                right_exp,
+            } => {
+                let left = Eval::eval_expression(left_exp);
+                let right = Eval::eval_expression(right_exp);
+                result = Eval::eval_infix_expression(&operator, &left, &right);
+            },
             Expression::IfExpression {
                 token: _,
                 condition: _,
@@ -134,6 +138,27 @@ impl Eval {
             _ => Object::NULL,
         }
     }
+
+    fn eval_infix_expression(operator: &str, left: &Object, right: &Object) -> Object {
+        let left_type = left.get_type();
+        let right_type = right.get_type();
+        if left_type.is_integer() && right_type.is_integer() {
+            Eval::eval_integer_infix_expression(operator, left, right)
+        } else {
+            // TODO others
+            Object::NULL
+        }
+    }
+
+    fn eval_integer_infix_expression(operator: &str, left: &Object, right: &Object) -> Object {
+        match operator {
+            "+" => Object::Integer { value: left.inspect().parse::<i64>().unwrap() + right.inspect().parse::<i64>().unwrap()},
+            "-" => Object::Integer { value: left.inspect().parse::<i64>().unwrap() - right.inspect().parse::<i64>().unwrap()},
+            "*" => Object::Integer { value: left.inspect().parse::<i64>().unwrap() * right.inspect().parse::<i64>().unwrap()},
+            "/" => Object::Integer { value: left.inspect().parse::<i64>().unwrap() / right.inspect().parse::<i64>().unwrap()},
+            _ => Object::NULL,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -150,6 +175,17 @@ mod test {
             ("10;", Object::Integer { value: 10 }),
             ("-5;", Object::Integer { value: -5 }),
             ("-10;", Object::Integer { value: -10 }),
+            ("5 + 5 + 5 + 5 - 10;", Object::Integer {value: 10}),
+            ("2 * 2 * 2 * 2 * 2;", Object::Integer {value: 32}),
+            ("-50 + 100 + -50;", Object::Integer {value: 0}),
+            ("5 * 2 + 10;", Object::Integer {value: 20}),
+            ("5 + 2 * 10;", Object::Integer {value: 25}),
+            ("20 + 2 * -10;", Object::Integer {value: 0}),
+            ("50 / 2 * 2 + 10;", Object::Integer {value: 60}),
+            ("2 * (5 + 10);", Object::Integer {value: 30}),
+            ("3 * 3 * 3 + 10;", Object::Integer {value: 37}),
+            ("3 * (3 * 3 + 10);", Object::Integer {value: 57}),
+            ("(5 + 10 * 2 + 15 / 3) * 2 + -10;", Object::Integer {value: 50}),
         ];
 
         do_test(&tests);

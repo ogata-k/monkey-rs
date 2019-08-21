@@ -27,6 +27,22 @@ impl ObjectType {
             object_type: NULL_OBJECT.to_string(),
         }
     }
+
+    pub fn is_integer(&self) -> bool {
+        &self.object_type == INTEGER_OBJECT
+    }
+    pub fn is_boolean(&self) -> bool {
+        &self.object_type == BOOLEAN_OBJECT
+    }
+    pub fn is_null(&self) -> bool {
+        &self.object_type == NULL_OBJECT
+    }
+}
+
+impl ToString for ObjectType {
+    fn to_string(&self) -> String {
+        self.object_type.to_string()
+    }
 }
 
 /// オブジェクトシステム上で扱うオブジェクト情報
