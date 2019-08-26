@@ -144,6 +144,8 @@ impl Eval {
         let right_type = right.get_type();
         if left_type.is_integer() && right_type.is_integer() {
             Eval::eval_integer_infix_expression(operator, left, right)
+        } else if left_type.is_boolean() && right_type.is_boolean() {
+            Eval::eval_boolean_infix_expression(operator, left, right)
         } else {
             // TODO others
             Object::NULL
@@ -151,11 +153,27 @@ impl Eval {
     }
 
     fn eval_integer_infix_expression(operator: &str, left: &Object, right: &Object) -> Object {
+        let left_int = left.inspect().parse::<i64>().unwrap();
+        let right_int = right.inspect().parse::<i64>().unwrap();
         match operator {
-            "+" => Object::Integer { value: left.inspect().parse::<i64>().unwrap() + right.inspect().parse::<i64>().unwrap()},
-            "-" => Object::Integer { value: left.inspect().parse::<i64>().unwrap() - right.inspect().parse::<i64>().unwrap()},
-            "*" => Object::Integer { value: left.inspect().parse::<i64>().unwrap() * right.inspect().parse::<i64>().unwrap()},
-            "/" => Object::Integer { value: left.inspect().parse::<i64>().unwrap() / right.inspect().parse::<i64>().unwrap()},
+            "+" => Object::Integer { value: left_int + right_int},
+            "-" => Object::Integer { value: left_int - right_int},
+            "*" => Object::Integer { value: left_int * right_int},
+            "/" => Object::Integer { value: left_int / right_int},
+            "<" => Object::Boolean { value: left_int < right_int},
+            ">" => Object::Boolean { value: left_int > right_int},
+            "==" => Object::Boolean { value: left_int == right_int},
+            "!=" => Object::Boolean { value: left_int != right_int},
+            _ => Object::NULL,
+        }
+    }
+
+    fn eval_boolean_infix_expression(operator: &str, left: &Object, right: &Object) -> Object {
+        let left_bool = left.inspect().parse::<bool>().unwrap();
+        let right_bool = right.inspect().parse::<bool>().unwrap();
+        match operator {
+            "==" => Object::Boolean { value: left_bool == right_bool},
+            "!=" => Object::Boolean { value: left_bool != right_bool},
             _ => Object::NULL,
         }
     }
@@ -186,6 +204,14 @@ mod test {
             ("3 * 3 * 3 + 10;", Object::Integer {value: 37}),
             ("3 * (3 * 3 + 10);", Object::Integer {value: 57}),
             ("(5 + 10 * 2 + 15 / 3) * 2 + -10;", Object::Integer {value: 50}),
+            ("1 < 2;", Object::Boolean { value: true }),
+            ("1 > 2;", Object::Boolean { value: false }),
+            ("1 < 1;", Object::Boolean { value: false }),
+            ("1 > 1;", Object::Boolean { value: false }),
+            ("1 == 1;", Object::Boolean { value: true }),
+            ("1 != 1;", Object::Boolean { value: false }),
+            ("1 == 2;", Object::Boolean { value: false }),
+            ("1 != 2;", Object::Boolean { value: true }),
         ];
 
         do_test(&tests);
@@ -196,6 +222,14 @@ mod test {
         let tests = [
             ("true;", Object::Boolean { value: true }),
             ("false;", Object::Boolean { value: false }),
+            ("true == true;", Object::Boolean { value: true }),
+            ("false == false;", Object::Boolean { value: true }),
+            ("true != false;", Object::Boolean { value: true }),
+            ("false != true;", Object::Boolean { value: true }),
+            ("(1 < 2) == true;", Object::Boolean { value: true }),
+            ("(1 < 2) == false;", Object::Boolean { value: false }),
+            ("(1 > 2) == true;", Object::Boolean { value: false }),
+            ("(1 > 2) == false;", Object::Boolean { value: true }),
         ];
 
         do_test(&tests);
