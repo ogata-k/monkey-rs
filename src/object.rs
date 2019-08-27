@@ -83,4 +83,16 @@ impl Object {
             Object::Boolean { value } => format!("{}", value),
         }
     }
+
+    pub fn is_truthy(&self) -> bool{
+        let object_type = self.get_type();
+        if object_type.is_null(){
+            return true;
+        }
+        if let Object::Boolean { value } = self {
+            return *value;
+        }
+
+        true
+    }
 }

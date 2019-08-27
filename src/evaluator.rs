@@ -1,5 +1,5 @@
 use crate::ast::{Expression, Program, Statement};
-use crate::object::{Object, ObjectType};
+use crate::object::Object;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
 pub struct Eval {}
@@ -40,7 +40,9 @@ impl Eval {
             stmt @ Statement::BlockStatement {
                 token: _,
                 statements: _,
-            } => unimplemented!(),
+            } => {
+                result = Self::eval_block_statement(&stmt);
+            }
         }
         result
     }
@@ -55,6 +57,16 @@ impl Eval {
                 result = Self::eval_expression(exp);
             }
             _ => unreachable!(),
+        }
+        result
+    }
+
+    fn eval_block_statement(block: &Statement) -> Object {
+        let mut result = Object::NULL;
+        if let Statement::BlockStatement { token: _, statements} = block{
+            for statement in statements {
+                result = Self::eval_statement(&statement);
+            }
         }
         result
     }
@@ -98,10 +110,22 @@ impl Eval {
             },
             Expression::IfExpression {
                 token: _,
-                condition: _,
-                consequence: _,
-                alternative: _,
-            } => unimplemented!(),
+                condition,
+                consequence,
+                alternative,
+            } => {
+                let cond = Eval::eval_expression(condition);
+
+                if cond.is_truthy() {
+                    return Eval::eval_statement(consequence);
+                } else {
+                    if let Some(alt) = &**alternative {
+                        return Eval::eval_statement(alt);
+                    } else {
+                        return Object::Null;
+                    }
+                }
+            },
             Expression::CallExpression {
                 token: _,
                 function: _,
@@ -244,6 +268,20 @@ mod test {
             ("!!true;", Object::BOOLEAN_TRUE),
             ("!!false;", Object::BOOLEAN_FALSE),
             ("!!5;", Object::BOOLEAN_TRUE),
+        ];
+        do_test(&tests);
+    }
+
+    #[test]
+    fn test_if_expressions() {
+        let tests = [
+            ("if (true) {10;};", Object::Integer {value: 10}),
+            ("if (false) {10;};", Object::NULL),
+            ("if (1) {10;};", Object::Integer {value: 10}),
+            ("if (1 < 2) {10;};", Object::Integer {value: 10}),
+            ("if (1 > 2) {10;};", Object::NULL),
+            ("if (1 < 2) {10;} else {20;};", Object::Integer {value: 10}),
+            ("if (1 > 2) {10;} else {20;};", Object::Integer {value: 20}),
         ];
         do_test(&tests);
     }
