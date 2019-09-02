@@ -2,6 +2,7 @@
 const NULL_OBJECT: &str = "NULL";
 const INTEGER_OBJECT: &str = "INTEGER";
 const BOOLEAN_OBJECT: &str = "BOOLEAN";
+const RETURN_VALUE_OBJECT: &str = "RETURN_VALUE";
 
 /// オブジェクトシステム上で管理するための型情報
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
@@ -28,6 +29,12 @@ impl ObjectType {
         }
     }
 
+    pub fn return_value_object_type() -> Self {
+        ObjectType {
+            object_type: RETURN_VALUE_OBJECT.to_string(),
+        }
+    }
+
     pub fn is_integer(&self) -> bool {
         &self.object_type == INTEGER_OBJECT
     }
@@ -36,6 +43,9 @@ impl ObjectType {
     }
     pub fn is_null(&self) -> bool {
         &self.object_type == NULL_OBJECT
+    }
+    pub fn is_return_value(&self) -> bool {
+        &self.object_type == RETURN_VALUE_OBJECT
     }
 }
 
@@ -51,6 +61,7 @@ pub enum Object {
     Null,
     Integer { value: i64 },
     Boolean { value: bool },
+    ReturnValue { value: Box<Object>},
 }
 
 impl ToString for Object {
@@ -60,6 +71,7 @@ impl ToString for Object {
             Null => "null".to_string(),
             Integer { value: v } => format!("{}", v),
             Boolean { value: v } => format!("{}", v),
+            ReturnValue { value: obj }  => format!("{}", obj.to_string()),
         }
     }
 }
@@ -74,14 +86,11 @@ impl Object {
             Object::Null => ObjectType::null_object_type(),
             Object::Integer { value: _ } => ObjectType::integer_object_type(),
             Object::Boolean { value: _ } => ObjectType::boolean_object_type(),
+            Object::ReturnValue { value: _ } => ObjectType::return_value_object_type(),
         }
     }
     pub fn inspect(&self) -> String {
-        match self {
-            Object::Null => "null".to_string(),
-            Object::Integer { value } => format!("{}", value),
-            Object::Boolean { value } => format!("{}", value),
-        }
+        self.to_string()
     }
 
     pub fn is_truthy(&self) -> bool{

@@ -14,6 +14,9 @@ impl Eval {
 
         for statement in statements {
             result = Self::eval_statement(&statement);
+            if result.get_type().is_return_value() {
+                break;
+            }
         }
         result
     }
@@ -33,10 +36,12 @@ impl Eval {
                 name: _,
                 value: _,
             } => unimplemented!(),
-            stmt @ Statement::ReturnStatement {
+            Statement::ReturnStatement {
                 token: _,
-                return_value: _,
-            } => unimplemented!(),
+                return_value,
+            } => {
+                result = Self::eval_return_statement(return_value);
+            },
             stmt @ Statement::BlockStatement {
                 token: _,
                 statements: _,
@@ -59,6 +64,11 @@ impl Eval {
             _ => unreachable!(),
         }
         result
+    }
+
+    fn eval_return_statement(return_value: &Expression) -> Object {
+        let value = Eval::eval_expression(return_value);
+        Object::ReturnValue {value: Box::new(value)}
     }
 
     fn eval_block_statement(block: &Statement) -> Object {
@@ -283,6 +293,40 @@ mod test {
             ("if (1 < 2) {10;} else {20;};", Object::Integer {value: 10}),
             ("if (1 > 2) {10;} else {20;};", Object::Integer {value: 20}),
         ];
+        do_test(&tests);
+    }
+
+    #[test]
+    fn test_eval_return_statements() {
+        let tests = [
+            ("return 5;", Object::ReturnValue {value: Box::new(Object::Integer { value: 5 })}),
+            ("return 10;", Object::ReturnValue {value: Box::new(Object::Integer { value: 10 })}),
+            ("5; return 5;", Object::ReturnValue {value: Box::new(Object::Integer { value: 5 })}),
+            ("return 5; 5;", Object::ReturnValue {value: Box::new(Object::Integer { value: 5 })}),
+            ("5; return 5; 5;", Object::ReturnValue {value: Box::new(Object::Integer { value: 5 })}),
+            ("return -5;", Object::ReturnValue {value: Box::new(Object::Integer { value: -5 })}),
+            ("return -10;", Object::ReturnValue {value: Box::new(Object::Integer { value: -10 })}),
+            ("return 5 + 5 + 5 + 5 - 10;", Object::ReturnValue {value: Box::new(Object::Integer {value: 10})}),
+            ("return 2 * 2 * 2 * 2 * 2;", Object::ReturnValue {value: Box::new(Object::Integer {value: 32})}),
+            ("return -50 + 100 + -50;", Object::ReturnValue {value: Box::new(Object::Integer {value: 0})}),
+            ("return 5 * 2 + 10;", Object::ReturnValue {value: Box::new(Object::Integer {value: 20})}),
+            ("return 5 + 2 * 10;", Object::ReturnValue {value: Box::new(Object::Integer {value: 25})}),
+            ("return 20 + 2 * -10;", Object::ReturnValue {value: Box::new(Object::Integer {value: 0})}),
+            ("return 50 / 2 * 2 + 10;", Object::ReturnValue {value: Box::new(Object::Integer {value: 60})}),
+            ("return 2 * (5 + 10);", Object::ReturnValue {value: Box::new(Object::Integer {value: 30})}),
+            ("return 3 * 3 * 3 + 10;", Object::ReturnValue {value: Box::new(Object::Integer {value: 37})}),
+            ("return 3 * (3 * 3 + 10);", Object::ReturnValue {value: Box::new(Object::Integer {value: 57})}),
+            ("return (5 + 10 * 2 + 15 / 3) * 2 + -10;", Object::ReturnValue {value: Box::new(Object::Integer {value: 50})}),
+            ("return 1 < 2;", Object::ReturnValue {value: Box::new(Object::Boolean { value: true })}),
+            ("return 1 > 2;", Object::ReturnValue {value: Box::new(Object::Boolean { value: false })}),
+            ("return 1 < 1;", Object::ReturnValue {value: Box::new(Object::Boolean { value: false })}),
+            ("return 1 > 1;", Object::ReturnValue {value: Box::new(Object::Boolean { value: false })}),
+            ("return 1 == 1;", Object::ReturnValue {value: Box::new(Object::Boolean { value: true })}),
+            ("return 1 != 1;", Object::ReturnValue {value: Box::new(Object::Boolean { value: false })}),
+            ("return 1 == 2;", Object::ReturnValue {value: Box::new(Object::Boolean { value: false })}),
+            ("return 1 != 2;", Object::ReturnValue {value: Box::new(Object::Boolean { value: true })}),
+        ];
+
         do_test(&tests);
     }
 
